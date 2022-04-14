@@ -23,7 +23,6 @@ public class MybatisMapperRegistry extends MapperRegistry {
 
     private final static List<AbstractMethod> DEFAULT_METHODS = Arrays.asList(
             new FindOne(), new FindList(), new FindById(), new FindByIds(),
-            new Count(), new Sum(), new Max(), new Min(),
             new Insert(), new InsertList(),
             new Update(), new UpdateById(),
             new Delete(), new DeleteById(), new DeleteByIds());

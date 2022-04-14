@@ -1,10 +1,12 @@
 package ma.haihong.mybatis.lambda.mapper;
 
-import ma.haihong.mybatis.lambda.condition.Lambda;
+import ma.haihong.mybatis.lambda.core.Lambda;
+import ma.haihong.mybatis.lambda.core.UpdateLambda;
+import ma.haihong.mybatis.lambda.core.WhereLambda;
+import ma.haihong.mybatis.lambda.core.defaults.DefaultLambda;
 import org.apache.ibatis.annotations.Param;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,21 +18,9 @@ import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA;
  */
 public interface LambdaMapper<T> {
 
-    T findOne(@Param(LAMBDA) Object param);
-
-    List<T> findList(@Param(LAMBDA) Object param);
-
     T findById(Serializable id);
 
     List<T> findByIds(@Param(COLLECTION) Collection<? extends Serializable> ids);
-
-    int count(@Param(LAMBDA) Object param);
-
-    BigDecimal sum(@Param(LAMBDA) Object param);
-
-    BigDecimal max(@Param(LAMBDA) Object param);
-
-    BigDecimal min(@Param(LAMBDA) Object param);
 
     int insert(T entity);
 
@@ -38,15 +28,24 @@ public interface LambdaMapper<T> {
 
     int updateById(T entity);
 
-    int update(@Param(LAMBDA) Object param);
-
     int deleteById(Serializable id);
 
     int deleteByIds(@Param(COLLECTION) Collection<? extends Serializable> ids);
 
-    int delete(@Param(LAMBDA) Object param);
+    /**
+     * 以下使用Lambda表达式参数的方法不可直接调用
+     * 必须通过{@link LambdaMapper#lambda()}方法调用
+     */
+
+    T findOne(@Param(LAMBDA) Lambda<T> lambda);
+
+    List<T> findList(@Param(LAMBDA) Lambda<T> lambda);
+
+    int update(@Param(LAMBDA) UpdateLambda<T> lambda);
+
+    int delete(@Param(LAMBDA) WhereLambda<T> lambda);
 
     default Lambda<T> lambda() {
-        return new Lambda<>(this);
+        return new DefaultLambda<>(this);
     }
 }

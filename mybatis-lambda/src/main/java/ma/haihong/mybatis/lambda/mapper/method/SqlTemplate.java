@@ -10,11 +10,6 @@ public enum SqlTemplate {
     FIND_BY_ID("findById", "<script>\nSELECT %s FROM %s WHERE %s=#{%s}\n</script>", "通过id查单条数据"),
     FIND_BY_IDS("findByIds", "<script>\nSELECT %s FROM %s WHERE %s IN (%s)\n</script>", "通过id列表查多条数据"),
 
-    COUNT("count", "<script>\nSELECT COUNT(%s) FROM %s %s\n</script>", "通过Lambda条件查询数量"),
-    SUM("sum", "", "通过Lambda条件查询累计"),
-    MAX("max", "", "通过Lambda条件查询最大值"),
-    MIN("min", "", "通过Lambda条件查询最小值"),
-
     INSERT("insert", "<script>\nINSERT INTO %s %s VALUES %s\n</script>", "插入单条数据"),
     INSERT_LIST("insertList", "<script>\nINSERT INTO %s %s VALUES %s\n</script>", "插入多条数据"),
 

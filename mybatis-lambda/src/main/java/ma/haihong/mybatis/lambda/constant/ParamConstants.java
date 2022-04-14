@@ -6,7 +6,7 @@ import static ma.haihong.mybatis.lambda.constant.CommonConstants.DOT;
  * @author haihong.ma
  */
 public interface ParamConstants {
-    String LAMBDA = "wl";
+    String LAMBDA = "ml";
     String COLLECTION = "coll";
     String LIST = "list";
     String ITEM = "item";
