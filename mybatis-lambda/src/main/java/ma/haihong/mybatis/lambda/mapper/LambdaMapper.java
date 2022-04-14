@@ -1,9 +1,7 @@
 package ma.haihong.mybatis.lambda.mapper;
 
+import ma.haihong.mybatis.lambda.core.DefaultLambda;
 import ma.haihong.mybatis.lambda.core.Lambda;
-import ma.haihong.mybatis.lambda.core.UpdateLambda;
-import ma.haihong.mybatis.lambda.core.WhereLambda;
-import ma.haihong.mybatis.lambda.core.defaults.DefaultLambda;
 import org.apache.ibatis.annotations.Param;
 
 import java.io.Serializable;
@@ -41,9 +39,9 @@ public interface LambdaMapper<T> {
 
     List<T> findList(@Param(LAMBDA) Lambda<T> lambda);
 
-    int update(@Param(LAMBDA) UpdateLambda<T> lambda);
+    int update(@Param(LAMBDA) Lambda<T> lambda);
 
-    int delete(@Param(LAMBDA) WhereLambda<T> lambda);
+    int delete(@Param(LAMBDA) Lambda<T> lambda);
 
     default Lambda<T> lambda() {
         return new DefaultLambda<>(this);

@@ -1,6 +1,6 @@
-package ma.haihong.mybatis.lambda.core;
+package ma.haihong.mybatis.lambda.core.action;
 
-import ma.haihong.mybatis.lambda.core.defaults.UpdateSet;
+import ma.haihong.mybatis.lambda.core.UpdateSet;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 
 import java.util.function.Consumer;
@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 /**
  * @author haihong.ma
  */
-public interface UpdateLambda<T> {
+public interface UpdateAction<T> {
 
     int update(T entity, SPredicate<T> predicate);
 
