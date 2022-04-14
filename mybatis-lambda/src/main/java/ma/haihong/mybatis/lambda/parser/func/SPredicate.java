@@ -1,4 +1,4 @@
-package ma.haihong.mybatis.lambda.parser;
+package ma.haihong.mybatis.lambda.parser.func;
 
 import java.io.Serializable;
 import java.util.function.Predicate;
@@ -9,5 +9,5 @@ import java.util.function.Predicate;
  * @author haihong.ma
  */
 @FunctionalInterface
-public interface SerializablePredicate<T> extends Predicate<T>, Serializable {
+public interface SPredicate<T> extends Predicate<T>, Serializable {
 }

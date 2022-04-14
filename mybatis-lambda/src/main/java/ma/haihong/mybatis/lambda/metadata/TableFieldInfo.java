@@ -37,17 +37,18 @@ public class TableFieldInfo {
         return propertyType;
     }
 
-    public String getSqlSet() {
+    public String getSqlSet(final String prefix) {
         if (isPrimaryKey()) {
             //主键默认不做update
             return EMPTY;
         }
-        String setSqlSegment = columnName + EQUALS + HASH_LEFT_BRACE + propertyName + RIGHT_BRACE + COMMA;
+        String prefixPropertyName = prefix + propertyName;
+        String setSqlSegment = columnName + EQUALS + HASH_LEFT_BRACE + prefixPropertyName + RIGHT_BRACE + COMMA;
         if (propertyType.isPrimitive()) {
             return setSqlSegment;
         }
         String nullableSqlSegment = propertyType.equals(String.class)
-                ? SqlScriptUtils.stringNullableSqlSegment(propertyName) : SqlScriptUtils.objectNullableSqlSegment(propertyName);
+                ? SqlScriptUtils.stringNullableSqlSegment(prefixPropertyName) : SqlScriptUtils.objectNullableSqlSegment(prefixPropertyName);
         return SqlScriptUtils.convertIf(setSqlSegment, nullableSqlSegment, false);
     }
 }

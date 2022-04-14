@@ -1,5 +1,7 @@
 package ma.haihong.mybatis.lambda.util;
 
+import java.util.Objects;
+
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
 
 /**
@@ -71,5 +73,9 @@ public class StringUtils {
             }
         }
         return sb.toString();
+    }
+
+    public static String emptyIfNull(String str) {
+        return Objects.isNull(str) ? EMPTY : str;
     }
 }

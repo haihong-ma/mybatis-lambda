@@ -1,13 +1,15 @@
 package ma.haihong.mybatis.lambda.metadata;
 
 import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
+import ma.haihong.mybatis.lambda.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
-import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.COMMA;
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.NEWLINE;
 
 /**
  * @author haihong.ma
@@ -54,12 +56,13 @@ public class TableInfo {
     }
 
     public String getInsertPropertySqlSegment(final String prefix) {
-        String realPrefix = Objects.isNull(prefix) ? EMPTY : (prefix + DOT);
-        return fieldInfos.stream().map(m -> SqlScriptUtils.safeParam(realPrefix + m.getPropertyName())).collect(Collectors.joining(COMMA));
+        String convertPrefix = StringUtils.emptyIfNull(prefix);
+        return fieldInfos.stream().map(m -> SqlScriptUtils.safeParam(convertPrefix + m.getPropertyName())).collect(Collectors.joining(COMMA));
     }
 
-    public String getSetSqlSegment() {
-        return SqlScriptUtils.convertTrim(fieldInfos.stream().map(TableFieldInfo::getSqlSet).filter(Objects::nonNull).collect(joining(NEWLINE)),
+    public String getSetSqlSegment(final String prefix) {
+        String convertPrefix = StringUtils.emptyIfNull(prefix);
+        return SqlScriptUtils.convertTrim(fieldInfos.stream().map(m -> m.getSqlSet(convertPrefix)).filter(Objects::nonNull).collect(joining(NEWLINE)),
                 null, null, null, COMMA);
     }
 }

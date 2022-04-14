@@ -35,20 +35,20 @@ public class Assert {
         isTrue(StringUtils.isNotBlank(str), msg, throwable, params);
     }
 
-    public static void isTrue(boolean expression, Throwable throwable) {
-        if (!expression) {
+    public static void isTrue(boolean condition, Throwable throwable) {
+        if (!condition) {
             throw new MybatisLambdaException(throwable);
         }
     }
 
-    public static void isTrue(boolean expression, String msg, Object... params) {
-        if (!expression) {
+    public static void isTrue(boolean condition, String msg, Object... params) {
+        if (!condition) {
             throw new MybatisLambdaException(String.format(msg, params));
         }
     }
 
-    public static void isTrue(boolean expression, String msg, Throwable throwable, Object... params) {
-        if (!expression) {
+    public static void isTrue(boolean condition, String msg, Throwable throwable, Object... params) {
+        if (!condition) {
             throw new MybatisLambdaException(String.format(msg, params), throwable);
         }
     }

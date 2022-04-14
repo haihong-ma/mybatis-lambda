@@ -19,7 +19,7 @@ public class InsertList extends Insert {
     @Override
     protected String initSqlScript() {
         String columnSegment = SqlScriptUtils.withBracket(tableInfo.getAllColumnSqlSegment());
-        String valueSegment = SqlScriptUtils.withBracket(tableInfo.getInsertPropertySqlSegment(ITEM));
+        String valueSegment = SqlScriptUtils.withBracket(tableInfo.getInsertPropertySqlSegment(ITEM + DOT));
         String listValueSegment = SqlScriptUtils.convertForeach(valueSegment, ParamConstants.LIST, null, ITEM, COMMA);
         return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(), columnSegment, listValueSegment);
     }
