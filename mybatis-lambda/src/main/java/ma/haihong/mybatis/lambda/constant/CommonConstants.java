@@ -13,6 +13,7 @@ public interface CommonConstants {
     String EMPTY = "";
     String EQUALS = "=";
     String UNDERLINE = "_";
+    String SLASH = "/";
 
     String LEFT_BRACKET = "(";
     String RIGHT_BRACKET = ")";

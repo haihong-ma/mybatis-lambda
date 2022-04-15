@@ -4,6 +4,7 @@ import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 import ma.haihong.mybatis.lambda.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,7 @@ public class TableInfo {
     private final String keyProperty;
     private final Class<?> entityClass;
     private final List<TableFieldInfo> fieldInfos;
+    private final Map<String, String> propertyColumnMap;
 
     public TableInfo(String tableName, String keyColumn, String keyProperty,
                      Class<?> entityClass, List<TableFieldInfo> fieldInfos) {
@@ -29,6 +31,7 @@ public class TableInfo {
         this.keyProperty = keyProperty;
         this.entityClass = entityClass;
         this.fieldInfos = fieldInfos;
+        propertyColumnMap = fieldInfos.stream().collect(Collectors.toMap(TableFieldInfo::getPropertyName, TableFieldInfo::getColumnName));
     }
 
     public String getTableName() {
@@ -49,6 +52,10 @@ public class TableInfo {
 
     public List<TableFieldInfo> getFieldInfos() {
         return fieldInfos;
+    }
+
+    public String getColumnByProperty(String propertyName) {
+        return propertyColumnMap.get(propertyName);
     }
 
     public String getAllColumnSqlSegment() {

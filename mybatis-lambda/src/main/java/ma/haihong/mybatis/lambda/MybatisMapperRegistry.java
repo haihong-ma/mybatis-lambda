@@ -21,6 +21,8 @@ import java.util.List;
  */
 public class MybatisMapperRegistry extends MapperRegistry {
 
+    private final static String MAPPER_RESOURCE_SUFFIX = ".java (best guess)";
+
     private final static List<AbstractMethod> DEFAULT_METHODS = Arrays.asList(
             new FindOne(), new FindList(), new FindById(), new FindByIds(),
             new Insert(), new InsertList(),
@@ -47,6 +49,6 @@ public class MybatisMapperRegistry extends MapperRegistry {
     }
 
     private String getResource(Class<?> mapperClass) {
-        return mapperClass.getName().replace('.', '/') + ".java (best guess)";
+        return ReflectionUtils.convertNameWithSlash(mapperClass.getName()) + MAPPER_RESOURCE_SUFFIX;
     }
 }

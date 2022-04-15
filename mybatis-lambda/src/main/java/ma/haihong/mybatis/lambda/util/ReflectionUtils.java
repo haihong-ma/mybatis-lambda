@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ReflectionUtils {
 
+    private static final char DOT = '.';
+    private static final char SLASH = '/';
     private static final Field[] EMPTY_FIELD_ARRAY = new Field[0];
     private static final Map<Class<?>, Field[]> declaredFieldsCache = new ConcurrentHashMap<>(256);
 
@@ -36,6 +38,22 @@ public class ReflectionUtils {
             }
         }
         return target == null ? null : (Class<?>) target.getActualTypeArguments()[0];
+    }
+
+    public static String convertNameWithDOT(String nameWithSlash) {
+        return nameWithSlash.replace(SLASH, DOT);
+    }
+
+    public static String convertNameWithSlash(String nameWithDot) {
+        return nameWithDot.replace(DOT, SLASH);
+    }
+
+    public static Class<?> getClass(String className) {
+        try {
+            return Class.forName(className);
+        } catch (Throwable var3) {
+            return null;
+        }
     }
 
     public static Field[] getAllDeclaredFields(Class<?> leafClass) {

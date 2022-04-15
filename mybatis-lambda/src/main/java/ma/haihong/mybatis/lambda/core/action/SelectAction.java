@@ -11,11 +11,4 @@ public interface SelectAction<T> {
 
     List<T> findList();
 
-    int count();
-
-    Object max();
-
-    Object min();
-
-    Object sum();
 }

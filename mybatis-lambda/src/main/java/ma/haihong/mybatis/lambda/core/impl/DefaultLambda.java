@@ -31,7 +31,7 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
     @SuppressWarnings("unchecked")
     public T findOne() {
         T result = mapper.findOne(this);
-        if (Objects.nonNull(selectFunc)){
+        if (Objects.nonNull(result) &&Objects.nonNull(selectFunc)) {
             return (T) selectFunc.apply(result);
         }
         return result;
@@ -41,7 +41,7 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
     @SuppressWarnings("unchecked")
     public List<T> findList() {
         List<T> result = mapper.findList(this);
-        if (Objects.nonNull(selectFunc)){
+        if (Objects.nonNull(selectFunc)) {
             return (List<T>) result.stream().map(selectFunc).collect(Collectors.toList());
         }
         return result;
@@ -69,7 +69,7 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
 
     @Override
     public int update(T entity, SPredicate<T> predicate) {
-        Assert.notNull(entity,"entity can't be null");
+        Assert.notNull(entity, "entity can't be null");
 
         this.entity = entity;
         super.where(predicate);
@@ -78,7 +78,7 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
 
     @Override
     public int update(Consumer<UpdateSet<T>> updateSet, SPredicate<T> predicate) {
-        Assert.notNull(updateSet,"updateSet can't be null");
+        Assert.notNull(updateSet, "updateSet can't be null");
 
         UpdateSet<T> set = new UpdateSet<>();
         updateSet.accept(set);

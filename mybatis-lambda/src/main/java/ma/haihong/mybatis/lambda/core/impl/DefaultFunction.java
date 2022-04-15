@@ -1,26 +1,33 @@
 package ma.haihong.mybatis.lambda.core.impl;
 
-import ma.haihong.mybatis.lambda.core.SelectFunctionAndAction;
-import ma.haihong.mybatis.lambda.core.action.AllAction;
+import ma.haihong.mybatis.lambda.core.action.SelectAction;
+import ma.haihong.mybatis.lambda.core.combination.SelectFunctionAndAction;
 import ma.haihong.mybatis.lambda.core.fuction.SelectFunction;
 import ma.haihong.mybatis.lambda.core.fuction.WhereFunction;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
+import ma.haihong.mybatis.lambda.parser.LambdaUtils;
 import ma.haihong.mybatis.lambda.parser.func.SFunction;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 import ma.haihong.mybatis.lambda.util.Assert;
+import ma.haihong.mybatis.lambda.util.ReflectionUtils;
+import ma.haihong.mybatis.lambda.util.TableUtils;
+import org.apache.ibatis.reflection.property.PropertyNamer;
 
+import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
 
 /**
  * @author haihong.ma
  */
-public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T>, AllAction<T>, SelectFunctionAndAction<T> {
+public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T>, SelectAction<T>, SelectFunctionAndAction<T> {
+
+    protected final LambdaMapper<T> mapper;
 
     protected SFunction<T, ?> selectFunc;
-    protected final LambdaMapper<T> mapper;
+    private String selectSegment = EMPTY;
 
     private final StringBuilder whereSegmentBuilder;
     private final Map<String, Object> lambdaParamMap;
@@ -33,10 +40,12 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> AllAction<R> select(SFunction<T, R> function) {
+    public <R> SelectAction<R> select(SFunction<T, R> function) {
         Assert.notNull(function, "select function can not be null");
-        selectFunc = function;
-        return (AllAction<R>) this;
+        this.selectFunc = function;
+        SerializedLambda lambda = LambdaUtils.parse(function);
+        this.selectSegment = TableUtils.propertyToColumn(ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass())), PropertyNamer.methodToProperty(lambda.getImplMethodName()));
+        return (SelectAction<R>) this;
     }
 
     @Override
@@ -52,7 +61,7 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     }
 
     public String getSelectSegment() {
-        return EMPTY;
+        return selectSegment;
     }
 
     public String getJoinSegment() {

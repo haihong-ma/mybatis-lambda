@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.core.fuction;
 
-import ma.haihong.mybatis.lambda.core.SelectFunctionAndAction;
+import ma.haihong.mybatis.lambda.core.combination.SelectFunctionAndAction;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 
 /**

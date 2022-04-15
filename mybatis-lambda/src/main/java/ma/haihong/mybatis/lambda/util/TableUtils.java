@@ -35,6 +35,10 @@ public class TableUtils {
         });
     }
 
+    public static String propertyToColumn(Class<?> entityClass, String propertyName) {
+        return initTableInfo(entityClass).getColumnByProperty(propertyName);
+    }
+
     private static String initTableName(Class<?> entityClass) {
         TableName tableName = entityClass.getAnnotation(TableName.class);
         if (Objects.nonNull(tableName)) {
@@ -64,7 +68,7 @@ public class TableUtils {
                     columnName = tableField.value();
                 }
             }
-            if (StringUtils.isBlank(columnName)){
+            if (StringUtils.isBlank(columnName)) {
                 columnName = StringUtils.camelToUnderline(propertyName);
             }
 

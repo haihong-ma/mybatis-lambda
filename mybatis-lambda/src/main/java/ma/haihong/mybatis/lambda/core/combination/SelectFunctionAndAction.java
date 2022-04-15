@@ -1,4 +1,4 @@
-package ma.haihong.mybatis.lambda.core;
+package ma.haihong.mybatis.lambda.core.combination;
 
 import ma.haihong.mybatis.lambda.core.action.AllAction;
 import ma.haihong.mybatis.lambda.core.fuction.SelectFunction;
