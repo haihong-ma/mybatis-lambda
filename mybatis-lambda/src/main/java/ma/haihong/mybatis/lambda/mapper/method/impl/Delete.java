@@ -4,6 +4,8 @@ import ma.haihong.mybatis.lambda.mapper.method.AbstractMethod;
 import ma.haihong.mybatis.lambda.mapper.method.SqlTemplate;
 import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 
+import static ma.haihong.mybatis.lambda.constant.ParamConstants.WHERE_SEGMENT;
+
 /**
  * @author haihong.ma
  */
@@ -20,6 +22,6 @@ public class Delete extends AbstractMethod {
 
     @Override
     protected String initSqlScript() {
-        return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(), SqlScriptUtils.lambdaSqlSegment());
+        return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(), SqlScriptUtils.lambdaSqlSegment(WHERE_SEGMENT));
     }
 }

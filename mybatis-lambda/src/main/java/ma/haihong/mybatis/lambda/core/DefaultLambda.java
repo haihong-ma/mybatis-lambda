@@ -31,7 +31,7 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
 
     @Override
     public List<T> findList() {
-        return null;
+        return mapper.findList(this);
     }
 
     @Override

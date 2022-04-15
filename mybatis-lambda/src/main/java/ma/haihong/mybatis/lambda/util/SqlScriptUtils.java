@@ -2,7 +2,7 @@ package ma.haihong.mybatis.lambda.util;
 
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA;
-import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_SQL_SEGMENT;
+import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_DOT;
 
 /**
  * @author haihong.ma
@@ -171,7 +171,7 @@ public class SqlScriptUtils {
         return String.format(STRING_NULLABLE_TEMPLATE, propertyName, propertyName);
     }
 
-    public static String lambdaSqlSegment() {
-        return convertIf(unSafeParam(LAMBDA_SQL_SEGMENT), SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
+    public static String lambdaSqlSegment(String sqlSegmentName) {
+        return convertIf(unSafeParam(LAMBDA_DOT + sqlSegmentName), SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
     }
 }

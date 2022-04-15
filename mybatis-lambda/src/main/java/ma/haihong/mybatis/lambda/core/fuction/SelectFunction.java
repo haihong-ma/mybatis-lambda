@@ -6,5 +6,5 @@ import ma.haihong.mybatis.lambda.parser.func.SFunction;
  * @author haihong.ma
  */
 public interface SelectFunction<T> {
-    Object select(SFunction<T, ?> function);
+    <R> R  select(SFunction<T, R> function);
 }

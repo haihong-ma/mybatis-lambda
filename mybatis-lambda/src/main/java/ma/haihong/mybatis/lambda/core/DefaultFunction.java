@@ -9,6 +9,8 @@ import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
+
 /**
  * @author haihong.ma
  */
@@ -16,29 +18,49 @@ public class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T> {
 
     protected final LambdaMapper<T> mapper;
 
-    private final StringBuilder sqlSegmentBuilder;
+    private final StringBuilder whereSegmentBuilder;
     private final Map<String, Object> lambdaParamMap;
 
     public DefaultFunction(LambdaMapper<T> mapper) {
         this.mapper = mapper;
         this.lambdaParamMap = new HashMap<>();
-        this.sqlSegmentBuilder = new StringBuilder();
+        this.whereSegmentBuilder = new StringBuilder();
     }
 
     @Override
-    public Object select(SFunction<T, ?> function) {
+    public <R> R select(SFunction<T, R> function) {
         return null;
     }
 
     @Override
     public WhereFunction<T> where(SPredicate<T> predicate) {
         lambdaParamMap.put("jobId", 1);
-        sqlSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
+        whereSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
         return this;
     }
 
-    public String getSqlSegment() {
-        return sqlSegmentBuilder.toString();
+    public String getTablePrefix() {
+        return EMPTY;
+    }
+
+    public String getSelectSegment() {
+        return EMPTY;
+    }
+
+    public String getJoinSegment() {
+        return EMPTY;
+    }
+
+    public String getWhereSegment() {
+        return whereSegmentBuilder.toString();
+    }
+
+    public String getGroupBySegment() {
+        return EMPTY;
+    }
+
+    public String getOrderBySegment() {
+        return EMPTY;
     }
 
     public Map<String, Object> getLambdaParamMap() {

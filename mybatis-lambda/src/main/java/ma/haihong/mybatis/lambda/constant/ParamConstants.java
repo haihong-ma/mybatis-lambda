@@ -11,7 +11,12 @@ public interface ParamConstants {
     String LIST = "list";
     String ITEM = "item";
     String ENTITY = "entity";
-    String SQL_SEGMENT = "sqlSegment";
+    String TABLE_PREFIX = "tablePrefix";
+    String SELECT_SEGMENT = "selectSegment";
+    String JOIN_SEGMENT = "joinSegment";
+    String WHERE_SEGMENT = "whereSegment";
+    String ORDER_BY_SEGMENT = "orderBySegment";
+    String GROUP_BY_SEGMENT = "groupBySegment";
     String LAMBDA_ENTITY_DOT = LAMBDA + DOT + ENTITY + DOT;
-    String LAMBDA_SQL_SEGMENT = LAMBDA + DOT + SQL_SEGMENT;
+    String LAMBDA_DOT = LAMBDA + DOT;
 }

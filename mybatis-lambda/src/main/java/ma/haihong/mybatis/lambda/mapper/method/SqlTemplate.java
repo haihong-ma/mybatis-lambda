@@ -5,8 +5,8 @@ package ma.haihong.mybatis.lambda.mapper.method;
  */
 public enum SqlTemplate {
 
-    FIND_ONE("findOne", "<script>\nSELECT %s FROM %s %s\n</script>", "通过Lambda条件查询单条数据"),
-    FIND_LIST("findList", "<script>\nSELECT %s FROM %s %s\n</script>", "通过Lambda条件查询多条数据"),
+    FIND_ONE("findOne", "<script>\nSELECT %s FROM %s %s %s %s %s\n</script>", "通过Lambda条件查询单条数据"),
+    FIND_LIST("findList", "<script>\nSELECT %s FROM %s %s %s %s %s\n</script>", "通过Lambda条件查询多条数据"),
     FIND_BY_ID("findById", "<script>\nSELECT %s FROM %s WHERE %s=#{%s}\n</script>", "通过id查单条数据"),
     FIND_BY_IDS("findByIds", "<script>\nSELECT %s FROM %s WHERE %s IN (%s)\n</script>", "通过id列表查多条数据"),
 

@@ -5,6 +5,7 @@ import ma.haihong.mybatis.lambda.mapper.method.SqlTemplate;
 import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_ENTITY_DOT;
+import static ma.haihong.mybatis.lambda.constant.ParamConstants.WHERE_SEGMENT;
 
 /**
  * @author haihong.ma
@@ -23,6 +24,6 @@ public class Update extends AbstractMethod {
     @Override
     protected String initSqlScript() {
         String setSqlSegment = tableInfo.getSetSqlSegment(LAMBDA_ENTITY_DOT);
-        return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(), setSqlSegment, SqlScriptUtils.lambdaSqlSegment());
+        return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(), setSqlSegment, SqlScriptUtils.lambdaSqlSegment(WHERE_SEGMENT));
     }
 }
