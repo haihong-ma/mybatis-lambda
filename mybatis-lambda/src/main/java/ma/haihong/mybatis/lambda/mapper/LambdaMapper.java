@@ -1,12 +1,13 @@
 package ma.haihong.mybatis.lambda.mapper;
 
-import ma.haihong.mybatis.lambda.core.impl.DefaultLambda;
 import ma.haihong.mybatis.lambda.core.Lambda;
+import ma.haihong.mybatis.lambda.core.impl.DefaultLambda;
 import org.apache.ibatis.annotations.Param;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.COLLECTION;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA;
@@ -38,6 +39,8 @@ public interface LambdaMapper<T> {
     T findOne(@Param(LAMBDA) Lambda<T> lambda);
 
     List<T> findList(@Param(LAMBDA) Lambda<T> lambda);
+
+    Map<String, ?> findOneMap(@Param(LAMBDA) Lambda<T> lambda);
 
     int update(@Param(LAMBDA) Lambda<T> lambda);
 

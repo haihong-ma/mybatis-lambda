@@ -8,5 +8,5 @@ import ma.haihong.mybatis.lambda.parser.func.SPredicate;
  */
 public interface WhereFunction<T> {
 
-    SelectFunctionAndAction<T> where(SPredicate<T> predicate);
+    SelectFunctionAndAction<T> where(SPredicate<T> where);
 }

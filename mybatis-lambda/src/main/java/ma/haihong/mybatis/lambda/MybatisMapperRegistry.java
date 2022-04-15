@@ -24,7 +24,7 @@ public class MybatisMapperRegistry extends MapperRegistry {
     private final static String MAPPER_RESOURCE_SUFFIX = ".java (best guess)";
 
     private final static List<AbstractMethod> DEFAULT_METHODS = Arrays.asList(
-            new FindOne(), new FindList(), new FindById(), new FindByIds(),
+            new FindOne(), new FindList(), new FindOneMap(), new FindById(), new FindByIds(),
             new Insert(), new InsertList(),
             new Update(), new UpdateById(),
             new Delete(), new DeleteById(), new DeleteByIds());

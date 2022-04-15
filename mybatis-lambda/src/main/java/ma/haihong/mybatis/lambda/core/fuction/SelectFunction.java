@@ -8,5 +8,5 @@ import ma.haihong.mybatis.lambda.parser.func.SFunction;
  */
 public interface SelectFunction<T> {
 
-    <R> SelectAction<R> select(SFunction<T, R> function);
+    <R> SelectAction<R> select(SFunction<T, R> column);
 }

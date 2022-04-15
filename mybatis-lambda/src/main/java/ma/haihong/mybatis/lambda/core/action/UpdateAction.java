@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  */
 public interface UpdateAction<T> {
 
-    int update(T entity, SPredicate<T> predicate);
+    int update(T entity, SPredicate<T> where);
 
-    int update(Consumer<UpdateSet<T>> updateSet, SPredicate<T> predicate);
+    int update(Consumer<UpdateSet<T>> updateSet, SPredicate<T> where);
 }

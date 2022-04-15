@@ -7,5 +7,5 @@ import ma.haihong.mybatis.lambda.parser.func.SPredicate;
  */
 public interface DeleteAction<T> {
 
-    int delete(SPredicate<T> predicate);
+    int delete(SPredicate<T> where);
 }

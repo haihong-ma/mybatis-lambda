@@ -17,7 +17,7 @@ import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
 
 /**
  * @author haihong.ma
@@ -32,6 +32,9 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     private final StringBuilder whereSegmentBuilder;
     private final Map<String, Object> lambdaParamMap;
 
+    protected static final String WHERE_PREDICATE_NULL_TIP = "where predicate can't be null";
+    protected static final String SELECT_FUNCTION_NULL_TIP = "select column can't be null";
+
     public DefaultFunction(LambdaMapper<T> mapper) {
         this.mapper = mapper;
         this.lambdaParamMap = new HashMap<>();
@@ -40,17 +43,16 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> SelectAction<R> select(SFunction<T, R> function) {
-        Assert.notNull(function, "select function can not be null");
-        this.selectFunc = function;
-        SerializedLambda lambda = LambdaUtils.parse(function);
-        this.selectSegment = TableUtils.propertyToColumn(ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass())), PropertyNamer.methodToProperty(lambda.getImplMethodName()));
+    public <R> SelectAction<R> select(SFunction<T, R> column) {
+        assertSelectFunctionNotNull(column);
+        this.selectFunc = column;
+        this.selectSegment = convertToColumnName(column);
         return (SelectAction<R>) this;
     }
 
     @Override
-    public SelectFunctionAndAction<T> where(SPredicate<T> predicate) {
-        Assert.notNull(predicate, "where predicate can not be null");
+    public SelectFunctionAndAction<T> where(SPredicate<T> where) {
+        assertWherePredicateNotNull(where);
         lambdaParamMap.put("jobId", 1);
         whereSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
         return this;
@@ -83,4 +85,24 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     public Map<String, Object> getLambdaParamMap() {
         return lambdaParamMap;
     }
+
+    protected void setSelectSegment(String selectSegment) {
+        this.selectSegment = selectSegment;
+    }
+
+    protected String convertToColumnName(SFunction<T, ?> column) {
+        SerializedLambda lambda = LambdaUtils.parse(column);
+        Class<?> entityClass = ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass()));
+        Assert.notNull(entityClass, "entity class resolve failed");
+        return TableUtils.propertyToColumn(entityClass, PropertyNamer.methodToProperty(lambda.getImplMethodName()));
+    }
+
+    protected void assertWherePredicateNotNull(SPredicate<T> where) {
+        Assert.notNull(where, WHERE_PREDICATE_NULL_TIP);
+    }
+
+    protected void assertSelectFunctionNotNull(SFunction<T, ?> column) {
+        Assert.notNull(column, SELECT_FUNCTION_NULL_TIP);
+    }
+
 }

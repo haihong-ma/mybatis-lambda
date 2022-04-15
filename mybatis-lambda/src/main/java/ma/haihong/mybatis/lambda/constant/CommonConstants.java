@@ -14,6 +14,7 @@ public interface CommonConstants {
     String EQUALS = "=";
     String UNDERLINE = "_";
     String SLASH = "/";
+    String SPACE = " ";
 
     String LEFT_BRACKET = "(";
     String RIGHT_BRACKET = ")";
@@ -23,6 +24,8 @@ public interface CommonConstants {
     String RIGHT_BRACE = "}";
     String LEFT_CHEV = "<";
     String RIGHT_CHEV = ">";
+
+    String ONE = "1";
 
     String HASH_LEFT_BRACE = HASH + LEFT_BRACE;
     String DOLLAR_LEFT_BRACE = DOLLAR + LEFT_BRACE;

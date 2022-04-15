@@ -21,7 +21,7 @@ public class FindOne extends AbstractMethod {
 
     @Override
     protected void doAddMappedStatement() {
-        addSelectMappedStatement(tableInfo.getEntityClass());
+        addSelectMappedStatement(getResultType());
     }
 
     @Override
@@ -36,5 +36,9 @@ public class FindOne extends AbstractMethod {
         String selectSegment = SqlScriptUtils.convertIf(selectChooseSegment, SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
         return String.format(sqlTemplate.getSqlScript(), selectSegment,
                 tablePrefix + tableInfo.getTableName(), joinSegment, whereSegment, groupBySegment, orderBySegment);
+    }
+
+    protected Class<?> getResultType(){
+        return tableInfo.getEntityClass();
     }
 }
