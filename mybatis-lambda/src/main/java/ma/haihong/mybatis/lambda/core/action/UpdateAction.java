@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.core.action;
 
-import ma.haihong.mybatis.lambda.core.UpdateSet;
+import ma.haihong.mybatis.lambda.core.impl.UpdateSet;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 
 import java.util.function.Consumer;

@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.mapper;
 
-import ma.haihong.mybatis.lambda.core.DefaultLambda;
+import ma.haihong.mybatis.lambda.core.impl.DefaultLambda;
 import ma.haihong.mybatis.lambda.core.Lambda;
 import org.apache.ibatis.annotations.Param;
 

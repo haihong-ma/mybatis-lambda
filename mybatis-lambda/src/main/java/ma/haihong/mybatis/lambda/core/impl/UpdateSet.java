@@ -1,4 +1,4 @@
-package ma.haihong.mybatis.lambda.core;
+package ma.haihong.mybatis.lambda.core.impl;
 
 import ma.haihong.mybatis.lambda.parser.LambdaUtils;
 import ma.haihong.mybatis.lambda.parser.func.SFunction;

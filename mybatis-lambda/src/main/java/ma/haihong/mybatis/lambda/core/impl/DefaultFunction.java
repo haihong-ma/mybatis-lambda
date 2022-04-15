@@ -1,10 +1,13 @@
-package ma.haihong.mybatis.lambda.core;
+package ma.haihong.mybatis.lambda.core.impl;
 
+import ma.haihong.mybatis.lambda.core.SelectFunctionAndAction;
+import ma.haihong.mybatis.lambda.core.action.AllAction;
 import ma.haihong.mybatis.lambda.core.fuction.SelectFunction;
 import ma.haihong.mybatis.lambda.core.fuction.WhereFunction;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
 import ma.haihong.mybatis.lambda.parser.func.SFunction;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
+import ma.haihong.mybatis.lambda.util.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,8 +17,9 @@ import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
 /**
  * @author haihong.ma
  */
-public class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T> {
+public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T>, AllAction<T>, SelectFunctionAndAction<T> {
 
+    protected SFunction<T, ?> selectFunc;
     protected final LambdaMapper<T> mapper;
 
     private final StringBuilder whereSegmentBuilder;
@@ -28,12 +32,16 @@ public class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T> {
     }
 
     @Override
-    public <R> R select(SFunction<T, R> function) {
-        return null;
+    @SuppressWarnings("unchecked")
+    public <R> AllAction<R> select(SFunction<T, R> function) {
+        Assert.notNull(function, "select function can not be null");
+        selectFunc = function;
+        return (AllAction<R>) this;
     }
 
     @Override
-    public WhereFunction<T> where(SPredicate<T> predicate) {
+    public SelectFunctionAndAction<T> where(SPredicate<T> predicate) {
+        Assert.notNull(predicate, "where predicate can not be null");
         lambdaParamMap.put("jobId", 1);
         whereSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
         return this;

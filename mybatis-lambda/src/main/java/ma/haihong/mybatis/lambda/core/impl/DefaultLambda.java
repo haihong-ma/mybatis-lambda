@@ -1,11 +1,14 @@
-package ma.haihong.mybatis.lambda.core;
+package ma.haihong.mybatis.lambda.core.impl;
 
+import ma.haihong.mybatis.lambda.core.Lambda;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
 import ma.haihong.mybatis.lambda.parser.func.SPredicate;
 import ma.haihong.mybatis.lambda.util.Assert;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @author haihong.ma
@@ -25,13 +28,23 @@ public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public T findOne() {
-        return mapper.findOne(this);
+        T result = mapper.findOne(this);
+        if (Objects.nonNull(selectFunc)){
+            return (T) selectFunc.apply(result);
+        }
+        return result;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<T> findList() {
-        return mapper.findList(this);
+        List<T> result = mapper.findList(this);
+        if (Objects.nonNull(selectFunc)){
+            return (List<T>) result.stream().map(selectFunc).collect(Collectors.toList());
+        }
+        return result;
     }
 
     @Override

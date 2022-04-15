@@ -28,7 +28,7 @@ public class FindOne extends AbstractMethod {
     protected String initSqlScript() {
         String tablePrefix = SqlScriptUtils.lambdaSqlSegment(TABLE_PREFIX);
         String joinSegment = SqlScriptUtils.lambdaSqlSegment(JOIN_SEGMENT);
-        String whereSegment = SqlScriptUtils.lambdaSqlSegment(WHERE_SEGMENT);
+        String whereSegment = SqlScriptUtils.convertIf(SqlScriptUtils.convertWhere(SqlScriptUtils.unSafeParam(LAMBDA_DOT + WHERE_SEGMENT)), SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
         String groupBySegment = SqlScriptUtils.lambdaSqlSegment(GROUP_BY_SEGMENT);
         String orderBySegment = SqlScriptUtils.lambdaSqlSegment(ORDER_BY_SEGMENT);
         String selectChooseSegment = SqlScriptUtils.convertChoose(SqlScriptUtils.stringNullableSqlSegment(LAMBDA_DOT + SELECT_SEGMENT),
