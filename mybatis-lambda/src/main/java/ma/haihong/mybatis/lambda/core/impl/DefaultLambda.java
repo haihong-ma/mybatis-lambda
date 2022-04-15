@@ -19,7 +19,7 @@ import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
 /**
  * @author haihong.ma
  */
-public class DefaultLambda<T> extends DefaultFunction<T> implements Lambda<T> {
+public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
 
     private Object entity;
 

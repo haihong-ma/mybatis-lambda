@@ -9,4 +9,7 @@ public interface SqlConstants {
     String SUM_METHOD = "SUM";
     String COUNT_METHOD = "COUNT";
     String DISTINCT = "DISTINCT";
+    String ORDER_BY = "ORDER BY";
+    String DESC = "DESC";
+    String ASC = "ASC";
 }

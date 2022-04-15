@@ -1,9 +1,11 @@
 package ma.haihong.mybatis.lambda.core.impl;
 
 import ma.haihong.mybatis.lambda.core.action.SelectAction;
-import ma.haihong.mybatis.lambda.core.combination.SelectFunctionAndAction;
-import ma.haihong.mybatis.lambda.core.fuction.SelectFunction;
-import ma.haihong.mybatis.lambda.core.fuction.WhereFunction;
+import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndSelectAction;
+import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndQueryAction;
+import ma.haihong.mybatis.lambda.core.fuc.OrderByFunc;
+import ma.haihong.mybatis.lambda.core.fuc.SelectFunc;
+import ma.haihong.mybatis.lambda.core.fuc.WhereFunc;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
 import ma.haihong.mybatis.lambda.parser.LambdaUtils;
 import ma.haihong.mybatis.lambda.parser.func.SFunction;
@@ -17,27 +19,33 @@ import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ma.haihong.mybatis.lambda.constant.CommonConstants.EMPTY;
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
+import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
 
 /**
  * @author haihong.ma
  */
-public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunction<T>, SelectAction<T>, SelectFunctionAndAction<T> {
+public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, OrderByFunc<T>,
+        SelectAction<T>, SelectAndOrderByFuncAndQueryAction<T>, SelectAndOrderByFuncAndSelectAction<T> {
 
     protected final LambdaMapper<T> mapper;
 
     protected SFunction<T, ?> selectFunc;
     private String selectSegment = EMPTY;
 
+    private final StringBuilder orderBySegment;
+
     private final StringBuilder whereSegmentBuilder;
     private final Map<String, Object> lambdaParamMap;
 
     protected static final String WHERE_PREDICATE_NULL_TIP = "where predicate can't be null";
     protected static final String SELECT_FUNCTION_NULL_TIP = "select column can't be null";
+    protected static final String ENTITY_CLASS_RESOLVE_FAILED_TIP = "entity class resolve failed";
 
-    public DefaultFunction(LambdaMapper<T> mapper) {
+    public DefaultFunc(LambdaMapper<T> mapper) {
         this.mapper = mapper;
         this.lambdaParamMap = new HashMap<>();
+        this.orderBySegment = new StringBuilder();
         this.whereSegmentBuilder = new StringBuilder();
     }
 
@@ -51,10 +59,24 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     }
 
     @Override
-    public SelectFunctionAndAction<T> where(SPredicate<T> where) {
+    public SelectAndOrderByFuncAndQueryAction<T> where(SPredicate<T> where) {
         assertWherePredicateNotNull(where);
         lambdaParamMap.put("jobId", 1);
         whereSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
+        return this;
+    }
+
+    @Override
+    public SelectAndOrderByFuncAndSelectAction<T> orderByAsc(SFunction<T, ?> column) {
+        assertSelectFunctionNotNull(column);
+        orderBySegment.append(convertToColumnName(column)).append(SPACE).append(ASC).append(COMMA);
+        return this;
+    }
+
+    @Override
+    public SelectAndOrderByFuncAndSelectAction<T> orderByDesc(SFunction<T, ?> column) {
+        assertSelectFunctionNotNull(column);
+        orderBySegment.append(convertToColumnName(column)).append(SPACE).append(DESC).append(COMMA);
         return this;
     }
 
@@ -79,7 +101,7 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     }
 
     public String getOrderBySegment() {
-        return EMPTY;
+        return orderBySegment.length() > 0 ? ORDER_BY + SPACE + orderBySegment.deleteCharAt(orderBySegment.lastIndexOf(COMMA)) : EMPTY;
     }
 
     public Map<String, Object> getLambdaParamMap() {
@@ -93,7 +115,7 @@ public abstract class DefaultFunction<T> implements SelectFunction<T>, WhereFunc
     protected String convertToColumnName(SFunction<T, ?> column) {
         SerializedLambda lambda = LambdaUtils.parse(column);
         Class<?> entityClass = ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass()));
-        Assert.notNull(entityClass, "entity class resolve failed");
+        Assert.notNull(entityClass, ENTITY_CLASS_RESOLVE_FAILED_TIP);
         return TableUtils.propertyToColumn(entityClass, PropertyNamer.methodToProperty(lambda.getImplMethodName()));
     }
 
