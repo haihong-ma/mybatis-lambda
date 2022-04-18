@@ -78,13 +78,13 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
     }
 
     @Override
-    public <R extends Number> R max(SFunction<T, R> column) {
-        return doAggregate(MAX_METHOD, column);
+    public <R> R max(SFunction<T, R> column) {
+        return doMaxOrMin(MAX_METHOD, column);
     }
 
     @Override
-    public <R extends Number> R min(SFunction<T, R> column) {
-        return doAggregate(MIN_METHOD, column);
+    public <R> R min(SFunction<T, R> column) {
+        return doMaxOrMin(MIN_METHOD, column);
     }
 
     @Override
@@ -118,6 +118,15 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
         return entity;
     }
 
+    @SuppressWarnings("unchecked")
+    private <R> R doMaxOrMin(String aggregateMethod, SFunction<T, ?> column) {
+        assertSelectFunctionNotNull(column);
+        String columnName = convertToColumnName(column);
+        setSelectSegment(aggregateMethod + LEFT_BRACKET + columnName + RIGHT_BRACKET + SPACE + AS + SPACE + columnName);
+        T result = mapper.findOne(this);
+        return Objects.nonNull(result) ? (R) column.apply(result) : null;
+    }
+
     private <R extends Number> R doAggregate(String aggregateMethod, SFunction<T, ?> column) {
         assertSelectFunctionNotNull(column);
         return doAggregate(aggregateMethod, convertToColumnName(column));
@@ -125,8 +134,9 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
 
     @SuppressWarnings("unchecked")
     private <R extends Number> R doAggregate(String aggregateMethod, String whatAggregate) {
-        setSelectSegment(aggregateMethod + LEFT_BRACKET + whatAggregate + RIGHT_BRACKET);
+        String resultAlias = "Result";
+        setSelectSegment(aggregateMethod + LEFT_BRACKET + whatAggregate + RIGHT_BRACKET + SPACE + AS + SPACE + resultAlias);
         Map<String, ?> result = mapper.findOneMap(this);
-        return (R) (Objects.nonNull(result) ? result.get(getSelectSegment()) : null);
+        return (R) (Objects.nonNull(result) ? result.get(resultAlias) : null);
     }
 }

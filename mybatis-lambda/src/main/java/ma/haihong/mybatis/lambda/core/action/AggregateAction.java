@@ -15,9 +15,9 @@ public interface AggregateAction<T> {
 
     long count(SFunction<T, ?> column, boolean distinct);
 
-    <R extends Number> R max(SFunction<T, R> column);
+    <R> R max(SFunction<T, R> column);
 
-    <R extends Number> R min(SFunction<T, R> column);
+    <R> R min(SFunction<T, R> column);
 
     <R extends Number> BigDecimal sum(SFunction<T, R> column);
 }

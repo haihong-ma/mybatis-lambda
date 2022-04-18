@@ -12,4 +12,5 @@ public interface SqlConstants {
     String ORDER_BY = "ORDER BY";
     String DESC = "DESC";
     String ASC = "ASC";
+    String AS = "AS";
 }
