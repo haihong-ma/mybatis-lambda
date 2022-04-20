@@ -43,7 +43,7 @@ public class TableFieldInfo {
             return EMPTY;
         }
         String prefixPropertyName = prefix + propertyName;
-        String setSqlSegment = columnName + EQUALS + HASH_LEFT_BRACE + prefixPropertyName + RIGHT_BRACE + COMMA;
+        String setSqlSegment = columnName + EQUAL + HASH_LEFT_BRACE + prefixPropertyName + RIGHT_BRACE + COMMA;
         if (propertyType.isPrimitive()) {
             return setSqlSegment;
         }

@@ -2,8 +2,8 @@ package ma.haihong.mybatis.lambda.core.impl;
 
 import ma.haihong.mybatis.lambda.core.Lambda;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
-import ma.haihong.mybatis.lambda.parser.func.SFunction;
-import ma.haihong.mybatis.lambda.parser.func.SPredicate;
+import ma.haihong.mybatis.lambda.parsing.func.SFunction;
+import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 import ma.haihong.mybatis.lambda.util.Assert;
 
 import java.math.BigDecimal;

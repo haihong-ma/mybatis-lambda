@@ -11,6 +11,8 @@ public interface ParamConstants {
     String LIST = "list";
     String ITEM = "item";
     String ENTITY = "entity";
+    String PARAM = "param";
+    String PARAM_MAP = "paramMap";
     String TABLE_PREFIX = "tablePrefix";
     String SELECT_SEGMENT = "selectSegment";
     String JOIN_SEGMENT = "joinSegment";
@@ -19,4 +21,5 @@ public interface ParamConstants {
     String GROUP_BY_SEGMENT = "groupBySegment";
     String LAMBDA_ENTITY_DOT = LAMBDA + DOT + ENTITY + DOT;
     String LAMBDA_DOT = LAMBDA + DOT;
+    String LAMBDA_DOT_PARAM_MAP = LAMBDA + DOT + PARAM_MAP;
 }

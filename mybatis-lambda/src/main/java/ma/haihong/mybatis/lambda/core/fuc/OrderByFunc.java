@@ -1,7 +1,7 @@
 package ma.haihong.mybatis.lambda.core.fuc;
 
 import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndSelectAction;
-import ma.haihong.mybatis.lambda.parser.func.SFunction;
+import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 
 /**
  * @author haihong.ma

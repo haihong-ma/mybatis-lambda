@@ -1,15 +1,16 @@
 package ma.haihong.mybatis.lambda.core.impl;
 
 import ma.haihong.mybatis.lambda.core.action.SelectAction;
-import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndSelectAction;
 import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndQueryAction;
+import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndSelectAction;
 import ma.haihong.mybatis.lambda.core.fuc.OrderByFunc;
 import ma.haihong.mybatis.lambda.core.fuc.SelectFunc;
 import ma.haihong.mybatis.lambda.core.fuc.WhereFunc;
 import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
-import ma.haihong.mybatis.lambda.parser.LambdaUtils;
-import ma.haihong.mybatis.lambda.parser.func.SFunction;
-import ma.haihong.mybatis.lambda.parser.func.SPredicate;
+import ma.haihong.mybatis.lambda.parsing.LambdaUtils;
+import ma.haihong.mybatis.lambda.parsing.ParsedResult;
+import ma.haihong.mybatis.lambda.parsing.func.SFunction;
+import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 import ma.haihong.mybatis.lambda.util.Assert;
 import ma.haihong.mybatis.lambda.util.ReflectionUtils;
 import ma.haihong.mybatis.lambda.util.TableUtils;
@@ -35,8 +36,8 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
 
     private final StringBuilder orderBySegment;
 
-    private final StringBuilder whereSegmentBuilder;
-    private final Map<String, Object> lambdaParamMap;
+    private String whereSegment;
+    private Map<String, Object> paramMap;
 
     protected static final String WHERE_PREDICATE_NULL_TIP = "where predicate can't be null";
     protected static final String SELECT_FUNCTION_NULL_TIP = "select column can't be null";
@@ -44,9 +45,9 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
 
     public DefaultFunc(LambdaMapper<T> mapper) {
         this.mapper = mapper;
-        this.lambdaParamMap = new HashMap<>();
+        this.whereSegment = EMPTY;
+        this.paramMap = new HashMap<>();
         this.orderBySegment = new StringBuilder();
-        this.whereSegmentBuilder = new StringBuilder();
     }
 
     @Override
@@ -61,8 +62,9 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     @Override
     public SelectAndOrderByFuncAndQueryAction<T> where(SPredicate<T> where) {
         assertWherePredicateNotNull(where);
-        lambdaParamMap.put("jobId", 1);
-        whereSegmentBuilder.append("job_id = #{ml.lambdaParamMap.jobId}");
+        ParsedResult result = LambdaUtils.parseToSql(where);
+        paramMap = result.getParamMap();
+        whereSegment = result.getWhereSegment();
         return this;
     }
 
@@ -93,7 +95,7 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     }
 
     public String getWhereSegment() {
-        return whereSegmentBuilder.toString();
+        return whereSegment;
     }
 
     public String getGroupBySegment() {
@@ -104,8 +106,8 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
         return orderBySegment.length() > 0 ? ORDER_BY + SPACE + orderBySegment.deleteCharAt(orderBySegment.lastIndexOf(COMMA)) : EMPTY;
     }
 
-    public Map<String, Object> getLambdaParamMap() {
-        return lambdaParamMap;
+    public Map<String, Object> getParamMap() {
+        return paramMap;
     }
 
     protected void setSelectSegment(String selectSegment) {

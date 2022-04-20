@@ -11,11 +11,14 @@ public class SqlScriptUtils {
 
     private final static String OBJECT_NULLABLE_TEMPLATE = "%s != null";
     private final static String STRING_NULLABLE_TEMPLATE = OBJECT_NULLABLE_TEMPLATE + " and %s != ''";
-    private final static String COLLECTION_NULLABLE_TEMPLATE = OBJECT_NULLABLE_TEMPLATE + " and %s.size() > 0";
 
 
     private SqlScriptUtils() {
         // ignore
+    }
+
+    public static String convertLike(String paramName) {
+        return "concat('%', #{" + paramName + "}, '%')";
     }
 
     /**

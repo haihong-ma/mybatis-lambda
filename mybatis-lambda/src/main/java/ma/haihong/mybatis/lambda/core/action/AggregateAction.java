@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.core.action;
 
-import ma.haihong.mybatis.lambda.parser.func.SFunction;
+import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 
 import java.math.BigDecimal;
 

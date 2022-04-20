@@ -1,4 +1,4 @@
-package ma.haihong.mybatis.lambda.parser.func;
+package ma.haihong.mybatis.lambda.parsing.func;
 
 import java.io.Serializable;
 import java.util.function.Function;

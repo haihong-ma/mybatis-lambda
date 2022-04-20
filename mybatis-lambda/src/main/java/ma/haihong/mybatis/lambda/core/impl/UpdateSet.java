@@ -1,7 +1,7 @@
 package ma.haihong.mybatis.lambda.core.impl;
 
-import ma.haihong.mybatis.lambda.parser.LambdaUtils;
-import ma.haihong.mybatis.lambda.parser.func.SFunction;
+import ma.haihong.mybatis.lambda.parsing.LambdaUtils;
+import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 
 import java.util.HashMap;
 import java.util.Map;
