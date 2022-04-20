@@ -151,19 +151,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
             }
         }
         if (Objects.nonNull(realOperator)) {
-            String paramSegment;
-            String paramName = paramNameBuilder.toString();
-            if (IN.equals(realOperator)) {
-                String inSegment = IntStream.range(0, getParamListSize())
-                        .mapToObj(index -> HASH_LEFT_BRACE + paramName + LEFT_SQUARE_BRACKET + index + RIGHT_SQUARE_BRACKET + RIGHT_BRACE)
-                        .collect(Collectors.joining(COMMA));
-                paramSegment = LEFT_BRACKET + inSegment + RIGHT_BRACKET;
-            } else if (LIKE.equals(realOperator)) {
-                paramSegment = SqlScriptUtils.convertLike(paramName);
-            } else {
-                paramSegment = SqlScriptUtils.safeParam(paramName);
-            }
-            sqlSegments.add(column + SPACE + realOperator + SPACE + paramSegment);
+            addSegment(realOperator);
         }
         clearVariables();
     }
@@ -223,6 +211,9 @@ public class LambdaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitEnd() {
+        if (sqlSegments.isEmpty()) {
+            addSegment(operator);
+        }
         classVisitor.setResult(sqlSegments);
     }
 
@@ -242,6 +233,22 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private boolean isBoxingMethod(String owner, String name) {
         Class<?> resultClass = ReflectionUtils.getClass(Type.getObjectType(owner).getClassName());
         return Number.class.isAssignableFrom(resultClass) && NUMBER_BOXING_METHODS.contains(name);
+    }
+
+    private void addSegment(String realOperator) {
+        String paramSegment;
+        String paramName = paramNameBuilder.toString();
+        if (IN.equals(realOperator)) {
+            String inSegment = IntStream.range(0, getParamListSize())
+                    .mapToObj(index -> HASH_LEFT_BRACE + paramName + LEFT_SQUARE_BRACKET + index + RIGHT_SQUARE_BRACKET + RIGHT_BRACE)
+                    .collect(Collectors.joining(COMMA));
+            paramSegment = LEFT_BRACKET + inSegment + RIGHT_BRACKET;
+        } else if (LIKE.equals(realOperator)) {
+            paramSegment = SqlScriptUtils.convertLike(paramName);
+        } else {
+            paramSegment = SqlScriptUtils.safeParam(paramName);
+        }
+        sqlSegments.add(column + SPACE + realOperator + SPACE + paramSegment);
     }
 
     private int getParamListSize() {
