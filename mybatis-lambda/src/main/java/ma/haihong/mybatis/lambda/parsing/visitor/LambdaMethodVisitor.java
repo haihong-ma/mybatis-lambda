@@ -36,6 +36,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private String operator;
     private boolean hasParam;
     private StringBuilder paramNameBuilder;
+    private int perConditionParamCount = 0;
 
     private final List<Object> labels;
     private final AtomicInteger paramIndex;
@@ -48,6 +49,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private final static String STRING_OWNER = "java/lang/String";
     private final static List<String> NUMBER_BOXING_METHODS =
             Arrays.asList("intValue", "longValue", "floatValue", "doubleValue", "byteValue", "shortValue", "valueOf");
+    private final static List<String> NULLABLE_OPERATOR = Arrays.asList(IS_NULL, IS_NOT_NULL);
 
     public LambdaMethodVisitor(LambdaClassVisitor classVisitor, Map<String, Object> paramMap) {
         super(Opcodes.ASM5);
@@ -108,6 +110,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     public void visitVarInsn(int opcode, int var) {
         hasParam = classVisitor.hasParam(var);
         if (hasParam) {
+            perConditionParamCount++;
             paramNameBuilder.append(DOT).append(PARAM).append(var);
         }
     }
@@ -156,6 +159,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
         String sqlSegment = Objects.nonNull(finalOperator) ? getSqlSegment(finalOperator) : null;
         labels.add(new LabelExpression(label, reverse, finalOperator, sqlSegment));
         clearVariables();
+        validateCondition(finalOperator);
     }
 
     @Override
@@ -222,6 +226,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
 
     private String inferSqlSegment() {
         if (labels.isEmpty()) {
+            validateCondition(operator);
             return String.format(getSqlSegment(operator), operator);
         }
         int startIndex;
@@ -286,6 +291,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     }
 
     private void addParam(Object param) {
+        perConditionParamCount++;
         if (Objects.isNull(column)) {
             reverse = true;
         }
@@ -338,6 +344,12 @@ public class LambdaMethodVisitor extends MethodVisitor {
             return ((Collection<?>) paramValue).size();
         }
         throw new MybatisLambdaException("param type [" + paramValue.getClass().getName() + "] not support in operation");
+    }
+
+    private void validateCondition(String finalOperation) {
+        Assert.isTrue(perConditionParamCount == 1 ||
+                (perConditionParamCount == 0 && NULLABLE_OPERATOR.contains(finalOperation)), "Conditional formatting error. Must contain both an property and a parameter");
+        perConditionParamCount = 0;
     }
 
     private String negate(String negateOperator) {
