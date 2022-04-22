@@ -64,7 +64,7 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
         assertWherePredicateNotNull(where);
         ParsedResult result = LambdaUtils.parseToSql(where);
         paramMap = result.getParamMap();
-        whereSegment = result.getWhereSegment();
+        whereSegment = result.getSqlSegment();
         return this;
     }
 

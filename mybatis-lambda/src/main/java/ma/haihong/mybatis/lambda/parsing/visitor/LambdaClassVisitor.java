@@ -10,12 +10,9 @@ import org.objectweb.asm.Type;
 
 import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static ma.haihong.mybatis.lambda.constant.CommonConstants.SPACE;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.PARAM;
-import static ma.haihong.mybatis.lambda.constant.SqlConstants.AND;
 
 /**
  * @author haihong.ma
@@ -54,9 +51,8 @@ public class LambdaClassVisitor extends ClassVisitor {
         return parsedResult;
     }
 
-    void setResult(List<String> sqlSegments) {
-        String whereSegment = String.join(SPACE + AND + SPACE, sqlSegments);
-        parsedResult = new ParsedResult(whereSegment, paramMap);
+    void setSqlSegment(String sqlSegment) {
+        parsedResult = new ParsedResult(sqlSegment, paramMap);
     }
 
     int getParamCount() {

@@ -32,11 +32,12 @@ import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
 public class LambdaMethodVisitor extends MethodVisitor {
 
     private String column;
+    private boolean reverse;
     private String operator;
     private boolean hasParam;
     private StringBuilder paramNameBuilder;
 
-    private final List<String> sqlSegments;
+    private final List<Object> labels;
     private final AtomicInteger paramIndex;
     private final Map<String, Object> paramMap;
     private final LambdaClassVisitor classVisitor;
@@ -51,8 +52,8 @@ public class LambdaMethodVisitor extends MethodVisitor {
     public LambdaMethodVisitor(LambdaClassVisitor classVisitor, Map<String, Object> paramMap) {
         super(Opcodes.ASM5);
         this.paramMap = paramMap;
+        this.labels = new ArrayList<>();
         this.classVisitor = classVisitor;
-        this.sqlSegments = new ArrayList<>();
         this.paramNameBuilder = new StringBuilder(LAMBDA_DOT_PARAM_MAP);
         this.paramIndex = new AtomicInteger(classVisitor.getParamCount());
 
@@ -113,46 +114,47 @@ public class LambdaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitJumpInsn(int opcode, Label label) {
-        String realOperator = operator;
+        String finalOperator = operator;
         if (Objects.isNull(operator)) {
             switch (opcode) {
-                case Opcodes.IFNE:
-                case Opcodes.IF_ICMPEQ:
-                    realOperator = EQUAL;
-                    break;
                 case Opcodes.IFEQ:
+                case Opcodes.IF_ICMPEQ:
+                    finalOperator = EQUAL;
+                    break;
+                case Opcodes.IFNE:
                 case Opcodes.IF_ICMPNE:
-                    realOperator = NOT_EQUAL;
-                    break;
-                case Opcodes.IFGE:
-                case Opcodes.IF_ICMPLT:
-                    realOperator = LESS_THAN;
-                    break;
-                case Opcodes.IFGT:
-                case Opcodes.IF_ICMPLE:
-                    realOperator = LESS_THAN_AND_EQUAL;
-                    break;
-                case Opcodes.IFLE:
-                case Opcodes.IF_ICMPGT:
-                    realOperator = GREATER_THAN;
+                    finalOperator = NOT_EQUAL;
                     break;
                 case Opcodes.IFLT:
+                case Opcodes.IF_ICMPLT:
+                    finalOperator = LESS_THAN;
+                    break;
+                case Opcodes.IFLE:
+                case Opcodes.IF_ICMPLE:
+                    finalOperator = LESS_THAN_AND_EQUAL;
+                    break;
+                case Opcodes.IFGT:
+                case Opcodes.IF_ICMPGT:
+                    finalOperator = GREATER_THAN;
+                    break;
+                case Opcodes.IFGE:
                 case Opcodes.IF_ICMPGE:
-                    realOperator = GREATER_THAN_AND_EQUAL;
+                    finalOperator = GREATER_THAN_AND_EQUAL;
                     break;
                 case Opcodes.IF_ACMPEQ:
                 case Opcodes.IFNULL:
-                    sqlSegments.add(column + SPACE + IS_NOT_NULL);
+                    finalOperator = IS_NULL;
                     break;
                 case Opcodes.IF_ACMPNE:
                 case Opcodes.IFNONNULL:
-                    sqlSegments.add(column + SPACE + IS_NULL);
+                    finalOperator = IS_NOT_NULL;
                     break;
             }
+        } else if (Opcodes.IFEQ == opcode) {
+            finalOperator = negate(operator);
         }
-        if (Objects.nonNull(realOperator)) {
-            addSegment(realOperator);
-        }
+        String sqlSegment = Objects.nonNull(finalOperator) ? getSqlSegment(finalOperator) : null;
+        labels.add(new LabelExpression(label, reverse, finalOperator, sqlSegment));
         clearVariables();
     }
 
@@ -196,7 +198,6 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 addParam(1L);
                 break;
         }
-        super.visitInsn(opcode);
     }
 
     @Override
@@ -210,14 +211,84 @@ public class LambdaMethodVisitor extends MethodVisitor {
     }
 
     @Override
+    public void visitLabel(Label label) {
+        labels.add(label);
+    }
+
+    @Override
     public void visitEnd() {
-        if (sqlSegments.isEmpty()) {
-            addSegment(operator);
+        classVisitor.setSqlSegment(inferSqlSegment());
+    }
+
+    private String inferSqlSegment() {
+        if (labels.isEmpty()) {
+            return String.format(getSqlSegment(operator), operator);
         }
-        classVisitor.setResult(sqlSegments);
+        int startIndex;
+        Label trueLabel;
+        int size = labels.size();
+        Object beforeGoto = labels.get(size - 4);
+        if (beforeGoto instanceof Label) {
+            startIndex = size - 5;
+            trueLabel = (Label) beforeGoto;
+        } else {
+            trueLabel = null;
+            startIndex = size - 3;
+        }
+
+        Integer labelDepth = null;
+        List<Label> pendingLabels = new ArrayList<>();
+        Label falseLabel = (Label) labels.get(size - 2);
+        List<LabelExpression> expressions = new ArrayList<>();
+        for (int i = startIndex; i >= 0; i--) {
+            Object label = labels.get(i);
+            if (label instanceof LabelExpression) {
+                LabelExpression expression = (LabelExpression) label;
+                if (expression.getLabel().equals(falseLabel)) {
+                    expression.setNegation(true);
+                    expression.setLogical(AND);
+                } else if (expression.getLabel().equals(trueLabel)) {
+                    expression.setNegation(false);
+                    expression.setLogical(OR);
+                } else {
+                    if (pendingLabels.contains(expression.getLabel()) && labelDepth > 1) {
+                        expression.setLogical(AND);
+                        expression.setNegation(true);
+                        expression.setLeftBracket(LEFT_BRACKET);
+                    }
+                }
+                if (Objects.nonNull(labelDepth)) {
+                    if (labelDepth == 1) {
+                        expression.setRightBracket(RIGHT_BRACKET);
+                    }
+                    labelDepth++;
+                }
+                if (Objects.nonNull(expression.getOperator())) {
+                    expressions.add(expression);
+                }
+            } else {
+                labelDepth = 1;
+                pendingLabels.add((Label) label);
+            }
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = expressions.size() - 1; i >= 0; i--) {
+            LabelExpression expression = expressions.get(i);
+            String negateOperator = expression.isNegation() ? negate(expression.getOperator()) : expression.getOperator();
+            String finalOperator = expression.isReverse() ? reverse(negateOperator) : negateOperator;
+            builder.append(expression.getLeftBracket())
+                    .append(String.format(expression.getSqlSegment(), finalOperator))
+                    .append(expression.getRightBracket())
+                    .append(SPACE).append(expression.getLogical()).append(SPACE);
+        }
+        builder.delete(builder.lastIndexOf(AND), builder.length());
+        return builder.toString();
     }
 
     private void addParam(Object param) {
+        if (Objects.isNull(column)) {
+            reverse = true;
+        }
         String paramName = PARAM + paramIndex.getAndIncrement();
         paramNameBuilder.append(DOT).append(paramName);
         paramMap.put(paramName, param);
@@ -226,6 +297,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private void clearVariables() {
         this.column = null;
         this.operator = null;
+        this.reverse = false;
         this.hasParam = false;
         this.paramNameBuilder = new StringBuilder(LAMBDA_DOT_PARAM_MAP);
     }
@@ -235,20 +307,24 @@ public class LambdaMethodVisitor extends MethodVisitor {
         return Number.class.isAssignableFrom(resultClass) && NUMBER_BOXING_METHODS.contains(name);
     }
 
-    private void addSegment(String realOperator) {
+    private String getSqlSegment(String finalOperator) {
+        String segment = column + SPACE + "%s";
+        if (IS_NOT_NULL.equals(finalOperator) || IS_NULL.equals(finalOperator)) {
+            return segment;
+        }
         String paramSegment;
         String paramName = paramNameBuilder.toString();
-        if (IN.equals(realOperator)) {
+        if (IN.equals(finalOperator)) {
             String inSegment = IntStream.range(0, getParamListSize())
                     .mapToObj(index -> HASH_LEFT_BRACE + paramName + LEFT_SQUARE_BRACKET + index + RIGHT_SQUARE_BRACKET + RIGHT_BRACE)
                     .collect(Collectors.joining(COMMA));
             paramSegment = LEFT_BRACKET + inSegment + RIGHT_BRACKET;
-        } else if (LIKE.equals(realOperator)) {
+        } else if (LIKE.equals(finalOperator)) {
             paramSegment = SqlScriptUtils.convertLike(paramName);
         } else {
             paramSegment = SqlScriptUtils.safeParam(paramName);
         }
-        sqlSegments.add(column + SPACE + realOperator + SPACE + paramSegment);
+        return segment + SPACE + paramSegment;
     }
 
     private int getParamListSize() {
@@ -262,5 +338,109 @@ public class LambdaMethodVisitor extends MethodVisitor {
             return ((Collection<?>) paramValue).size();
         }
         throw new MybatisLambdaException("param type [" + paramValue.getClass().getName() + "] not support in operation");
+    }
+
+    private String negate(String negateOperator) {
+        switch (negateOperator) {
+            case LESS_THAN:
+                return GREATER_THAN_AND_EQUAL;
+            case LESS_THAN_AND_EQUAL:
+                return GREATER_THAN;
+            case GREATER_THAN:
+                return LESS_THAN_AND_EQUAL;
+            case GREATER_THAN_AND_EQUAL:
+                return LESS_THAN;
+            case IS_NOT_NULL:
+                return IS_NULL;
+            case IS_NULL:
+                return IS_NOT_NULL;
+            case EQUAL:
+                return NOT_EQUAL;
+            case NOT_EQUAL:
+                return EQUAL;
+        }
+        return negateOperator;
+    }
+
+    private String reverse(String reverseOperator) {
+        switch (reverseOperator) {
+            case LESS_THAN:
+                return GREATER_THAN;
+            case LESS_THAN_AND_EQUAL:
+                return GREATER_THAN_AND_EQUAL;
+            case GREATER_THAN:
+                return LESS_THAN;
+            case GREATER_THAN_AND_EQUAL:
+                return LESS_THAN_AND_EQUAL;
+        }
+        return reverseOperator;
+    }
+
+    private static class LabelExpression {
+        private String logical;
+        private boolean negation;
+        private String leftBracket;
+        private String rightBracket;
+
+        private final Label label;
+        private final boolean reverse;
+        private final String operator;
+        private final String sqlSegment;
+
+        public LabelExpression(Label label, boolean reverse, String operator, String sqlSegment) {
+            this.label = label;
+            this.reverse = reverse;
+            this.operator = operator;
+            this.sqlSegment = sqlSegment;
+            this.leftBracket = this.rightBracket = EMPTY;
+        }
+
+        public void setLogical(String logical) {
+            this.logical = logical;
+        }
+
+        public void setNegation(boolean negation) {
+            this.negation = negation;
+        }
+
+        public void setLeftBracket(String leftBracket) {
+            this.leftBracket = leftBracket;
+        }
+
+        public void setRightBracket(String rightBracket) {
+            this.rightBracket = rightBracket;
+        }
+
+        public Label getLabel() {
+            return label;
+        }
+
+        public boolean isReverse() {
+            return reverse;
+        }
+
+        public String getLogical() {
+            return logical;
+        }
+
+        public String getOperator() {
+            return operator;
+        }
+
+        public boolean isNegation() {
+            return negation;
+        }
+
+        public String getSqlSegment() {
+            return sqlSegment;
+        }
+
+        public String getLeftBracket() {
+            return leftBracket;
+        }
+
+        public String getRightBracket() {
+            return rightBracket;
+        }
     }
 }

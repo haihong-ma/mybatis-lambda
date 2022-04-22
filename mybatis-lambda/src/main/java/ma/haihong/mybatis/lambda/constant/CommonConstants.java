@@ -28,9 +28,9 @@ public interface CommonConstants {
 
     String EQUAL = "=";
     String NOT_EQUAL = "!=";
-    String GREATER_THAN = "&gt;";
+    String GREATER_THAN = ">";
     String GREATER_THAN_AND_EQUAL = GREATER_THAN + EQUAL;
-    String LESS_THAN = "&lt;";
+    String LESS_THAN = "<";
     String LESS_THAN_AND_EQUAL = LESS_THAN + EQUAL;
 
 
