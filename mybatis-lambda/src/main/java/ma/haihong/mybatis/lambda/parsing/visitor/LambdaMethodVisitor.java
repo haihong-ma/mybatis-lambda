@@ -342,8 +342,11 @@ public class LambdaMethodVisitor extends MethodVisitor {
          *  1、若列表对象为{@link LabelExpression}类型
          *      a、判断为false标签，则表示与下一个条件表达式为逻辑与关系，且需要取反
          *      b、判断为true标签，则表示与下一个条件表达式为逻辑或关系，且不需要取反
-         *      c、若非true或false标签，判断跳转的标签，与当前的LabelExpression中间存在其他LabelExpression（通过labelDepth变量判断）
-         *         则表示与下一个条件表达式为与关系，需要取反，且为，添加起始符（左括号）
+         *      c、若非true或false标签，判断跳转的标签；如果跳转标签在待处理标签（pendingLabelMap）内，且标签深度（labelDepth）大于1
+         *         -若true标签为null，则推断为逻辑与关系，且需要取反
+         *         -若true标签不为null，则推断为逻辑或关系，且不需要取反
+         *         -添加起始符（左括号），若跳转标签存在上一个LabelExpression，则该LabelExpression起始符置空
+         *      d、添加到expressions列表，用于构造最终的sql
          *  2、若列表对象为{@link Label}类型，则表示有LabelExpression需要跳转至此，添加到pendingLabels列表，并添加结束符（右括号）
          */
         Integer labelDepth = null;
@@ -363,8 +366,13 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 } else {
                     Label expressionLabel = expression.getLabel();
                     if (pendingLabelMap.containsKey(expressionLabel) && labelDepth > 1) {
-                        expression.setLogical(AND);
-                        expression.setNegation(true);
+                        if (Objects.nonNull(trueLabel)){
+                            expression.setLogical(AND);
+                            expression.setNegation(true);
+                        }else {
+                            expression.setLogical(OR);
+                            expression.setNegation(false);
+                        }
                         expression.setLeftBracket(LEFT_BRACKET);
                         LabelExpression handleExpression = pendingLabelMap.get(expressionLabel);
                         if (Objects.isNull(handleExpression)) {
