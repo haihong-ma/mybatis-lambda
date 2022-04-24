@@ -211,7 +211,8 @@ public class LambdaMethodVisitor extends MethodVisitor {
             }
             if (Objects.nonNull(operator) && !NULLABLE_OPERATOR.contains(operator)) {
                 //处理与常量0比较情况
-                if (!paramMap.containsKey(paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY))) {
+                String realParamName = paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY).split(REGEX_DOT)[0];
+                if (!paramMap.containsKey(realParamName)) {
                     addParam(0);
                 }
             }
@@ -457,7 +458,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private int getParamListSize() {
         Object paramValue = paramMap;
         String paramName = paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY);
-        for (String item : paramName.split("\\.")) {
+        for (String item : paramName.split(REGEX_DOT)) {
             MetaObject metaObject = MetaObject.forObject(paramValue, null, objectWrapperFactory, reflectorFactory);
             paramValue = metaObject.getValue(item);
         }

@@ -39,6 +39,8 @@ public interface CommonConstants {
     String GET_METHOD_PREFIX = "get";
     String CONTAINS_METHOD = "contains";
 
+    String REGEX_DOT = "\\.";
+
     String HASH_LEFT_BRACE = HASH + LEFT_BRACE;
     String DOLLAR_LEFT_BRACE = DOLLAR + LEFT_BRACE;
 }
