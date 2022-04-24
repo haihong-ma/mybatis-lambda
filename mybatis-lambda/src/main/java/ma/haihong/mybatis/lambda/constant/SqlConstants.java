@@ -14,7 +14,9 @@ public interface SqlConstants {
     String ASC = "ASC";
     String AS = "AS";
     String IN = "IN";
+    String NOT_IN = "NOT IN";
     String LIKE = "LIKE";
+    String NOT_LIKE = "NOT LIKE";
     String IS_NULL = "IS NULL";
     String IS_NOT_NULL = "IS NOT NULL";
     String AND = "AND";

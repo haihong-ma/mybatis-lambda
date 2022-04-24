@@ -493,7 +493,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
     }
 
     private String handleEqualNull(String operator) {
-        return perConditionParamCount == 0 && !multiColumn ? IS_NULL : operator;
+        return operator.equals(EQUAL) && perConditionParamCount == 0 && !multiColumn ? IS_NULL : operator;
     }
 
     /**
@@ -517,6 +517,10 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 return NOT_EQUAL;
             case NOT_EQUAL:
                 return EQUAL;
+            case IN:
+                return NOT_IN;
+            case LIKE:
+                return NOT_LIKE;
         }
         return operator;
     }
