@@ -41,7 +41,7 @@ public class LambdaClassVisitor extends ClassVisitor {
         if (!(methodName.equals(name) && methodDescriptor.equals(descriptor))) {
             return null;
         }
-        for (int index = 0; index < getParamCount(); index++) {
+        for (int index = 0; index < getCapturedArgCount(); index++) {
             paramMap.put(PARAM + index, getParam(index));
         }
         return new LambdaMethodVisitor(this, paramMap);
@@ -52,14 +52,15 @@ public class LambdaClassVisitor extends ClassVisitor {
     }
 
     void setSqlSegment(String sqlSegment) {
+        System.out.println(sqlSegment);
         parsedResult = new ParsedResult(sqlSegment, paramMap);
     }
 
-    int getParamCount() {
+    int getCapturedArgCount() {
         return lambda.getCapturedArgCount();
     }
 
-    boolean hasParam(int index) {
+    boolean hasCapturedArg(int index) {
         return lambda.getCapturedArgCount() > index;
     }
 

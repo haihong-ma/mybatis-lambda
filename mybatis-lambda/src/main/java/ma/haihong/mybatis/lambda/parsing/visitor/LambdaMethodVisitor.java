@@ -31,22 +31,60 @@ import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
  */
 public class LambdaMethodVisitor extends MethodVisitor {
 
+    /**
+     * 通过getXXX方法，获取到属性，并转换成列名
+     */
     private String column;
+    /**
+     * 若属性在前，变量（或常量）在后，则为false，操作符（operator）不需反转
+     * 若属性在后，变量（或常量）在前，则为ture，操作符（operator）需要反转
+     */
     private boolean reverse;
-    private String operator;
-    private boolean hasParam;
+    /**
+     * 通过方法equals、contains解析的操作符
+     */
+    private String operatorFromMethod;
+    /**
+     * 是否有变量参数，由此判断getXXX方法解析成变量名或字段名
+     */
+    private boolean hasCapturedArg;
+    /**
+     * 参数名构造器，若参数通过如test.getXXX().getYYY()赋值，则解析param0.xxx.yyy
+     */
     private StringBuilder paramNameBuilder;
+    /**
+     * 用来判断表达式的每个条件，是否符合一个属性对应一个变量（或常量）参数
+     */
     private int perConditionParamCount = 0;
 
+    /**
+     * 调用visitJumpInsn方法或visitLabel方法对应的Label，通过调用顺利来推断实际操作符及逻辑运算符
+     * 若通过{@link LambdaMethodVisitor#visitLabel(Label)}方法添加，对象为{@link Label}类型
+     * 若通过{@link LambdaMethodVisitor#visitJumpInsn(int, Label)}方法添加，对象为{@link LabelExpression}类型
+     */
     private final List<Object> labels;
+    /**
+     * 参数索引，默认值为变量参数数量+1，用来构造常量参数名
+     */
     private final AtomicInteger paramIndex;
+    /**
+     * 所有变量或常量参数集合
+     * 变量参数在{@link LambdaClassVisitor#visitMethod(int, String, String, String, String[])} ()}中初始化
+     * 常量参数在visitXXX方法中添加
+     */
     private final Map<String, Object> paramMap;
     private final LambdaClassVisitor classVisitor;
 
     private final ReflectorFactory reflectorFactory;
     private final ObjectWrapperFactory objectWrapperFactory;
 
+    /**
+     * 判断equals或contains调用者是否为字符串，由此判断使用IN或者LIKE
+     */
     private final static String STRING_OWNER = "java/lang/String";
+    /**
+     * 装箱或拆箱方法
+     */
     private final static List<String> NUMBER_BOXING_METHODS =
             Arrays.asList("intValue", "longValue", "floatValue", "doubleValue", "byteValue", "shortValue", "valueOf");
     private final static List<String> NULLABLE_OPERATOR = Arrays.asList(IS_NULL, IS_NOT_NULL);
@@ -57,27 +95,32 @@ public class LambdaMethodVisitor extends MethodVisitor {
         this.labels = new ArrayList<>();
         this.classVisitor = classVisitor;
         this.paramNameBuilder = new StringBuilder(LAMBDA_DOT_PARAM_MAP);
-        this.paramIndex = new AtomicInteger(classVisitor.getParamCount());
+        this.paramIndex = new AtomicInteger(classVisitor.getCapturedArgCount());
 
         this.reflectorFactory = new DefaultReflectorFactory();
         this.objectWrapperFactory = new DefaultObjectWrapperFactory();
     }
 
+    /**
+     * 通过方法名解析
+     * 若为contains或equals方法，解析为对应操作符
+     * 若为普通属性，判断是否有变量参数，有则构造参数名，没有则解析成列名
+     */
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
         if (isBoxingMethod(owner, name)) {
             return;
         }
-        if (hasParam) {
+        if (hasCapturedArg) {
             if (EQUALS_METHOD.equals(name)) {
-                operator = EQUAL;
+                operatorFromMethod = EQUAL;
                 return;
             }
             if (CONTAINS_METHOD.equals(name)) {
                 if (STRING_OWNER.equals(owner)) {
-                    operator = LIKE;
+                    operatorFromMethod = LIKE;
                 } else {
-                    operator = IN;
+                    operatorFromMethod = IN;
                 }
                 return;
             }
@@ -87,13 +130,13 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 column = TableUtils.propertyToColumn(classVisitor.getEntityClass(), PropertyNamer.methodToProperty(name));
             } else if (EQUALS_METHOD.equals(name)) {
                 Assert.notNull(column, "only support entity column use equals method");
-                operator = EQUAL;
+                operatorFromMethod = EQUAL;
             } else if (CONTAINS_METHOD.equals(name)) {
                 Assert.notNull(column, "only support entity column use contains method");
                 if (STRING_OWNER.equals(owner)) {
-                    operator = LIKE;
+                    operatorFromMethod = LIKE;
                 } else {
-                    operator = IN;
+                    operatorFromMethod = IN;
                 }
             } else {
                 throw new MybatisLambdaException("entity or entity column method [" + name + "] nonsupport");
@@ -106,65 +149,82 @@ public class LambdaMethodVisitor extends MethodVisitor {
         super.visitFieldInsn(opcode, owner, name, descriptor);
     }
 
+    /**
+     * 通过var索引判断是否有变量参数，有则添加到参数名构造器
+     */
     @Override
     public void visitVarInsn(int opcode, int var) {
-        hasParam = classVisitor.hasParam(var);
-        if (hasParam) {
+        hasCapturedArg = classVisitor.hasCapturedArg(var);
+        if (hasCapturedArg) {
             perConditionParamCount++;
             paramNameBuilder.append(DOT).append(PARAM).append(var);
         }
     }
 
+    /**
+     * 参数名及列名构造成功后，通过此方法解析操作符
+     * 若通过equals或contains方法调用，则methodOperator不为空，若此时opcode为{@link Opcodes#IFEQ}时，因字节码编译逻辑，则需要取反，来适应普通操作符的推断逻辑
+     * 若则methodOperator为空，则通过操作码判断操作符
+     */
     @Override
     public void visitJumpInsn(int opcode, Label label) {
-        String finalOperator = operator;
-        if (Objects.isNull(operator)) {
+        String operator = operatorFromMethod;
+        if (Objects.isNull(operatorFromMethod)) {
             switch (opcode) {
                 case Opcodes.IFEQ:
                 case Opcodes.IF_ICMPEQ:
-                    finalOperator = EQUAL;
+                    operator = EQUAL;
                     break;
                 case Opcodes.IFNE:
                 case Opcodes.IF_ICMPNE:
-                    finalOperator = NOT_EQUAL;
+                    operator = NOT_EQUAL;
                     break;
                 case Opcodes.IFLT:
                 case Opcodes.IF_ICMPLT:
-                    finalOperator = LESS_THAN;
+                    operator = LESS_THAN;
                     break;
                 case Opcodes.IFLE:
                 case Opcodes.IF_ICMPLE:
-                    finalOperator = LESS_THAN_AND_EQUAL;
+                    operator = LESS_THAN_AND_EQUAL;
                     break;
                 case Opcodes.IFGT:
                 case Opcodes.IF_ICMPGT:
-                    finalOperator = GREATER_THAN;
+                    operator = GREATER_THAN;
                     break;
                 case Opcodes.IFGE:
                 case Opcodes.IF_ICMPGE:
-                    finalOperator = GREATER_THAN_AND_EQUAL;
+                    operator = GREATER_THAN_AND_EQUAL;
                     break;
                 case Opcodes.IF_ACMPEQ:
                 case Opcodes.IFNULL:
-                    finalOperator = IS_NULL;
+                    operator = IS_NULL;
                     break;
                 case Opcodes.IF_ACMPNE:
                 case Opcodes.IFNONNULL:
-                    finalOperator = IS_NOT_NULL;
+                    operator = IS_NOT_NULL;
                     break;
             }
         } else if (Opcodes.IFEQ == opcode) {
-            finalOperator = negate(operator);
+            operator = negate(operatorFromMethod);
         }
-        String sqlSegment = Objects.nonNull(finalOperator) ? getSqlSegment(finalOperator) : null;
-        labels.add(new LabelExpression(label, reverse, finalOperator, sqlSegment));
+        String sqlSegment = Objects.nonNull(operator) ? getSqlSegment(operator) : null;
+        labels.add(new LabelExpression(label, reverse, operator, sqlSegment));
         clearVariables();
-        validateCondition(finalOperator);
+        validateCondition(operator);
     }
 
+    /**
+     * 添加字节码常量参数
+     */
     @Override
     public void visitInsn(int opcode) {
         switch (opcode) {
+            case Opcodes.DCONST_0:
+                addParam(0d);
+                break;
+            case Opcodes.DCONST_1:
+                addParam(1d);
+                break;
             case Opcodes.FCONST_0:
                 addParam(0f);
                 break;
@@ -204,43 +264,73 @@ public class LambdaMethodVisitor extends MethodVisitor {
         }
     }
 
+    /**
+     * 添加数字类型常量参数
+     */
     @Override
     public void visitIntInsn(int opcode, int operand) {
         addParam(operand);
     }
 
+    /**
+     * 添加字符串类型常量参数
+     */
     @Override
     public void visitLdcInsn(Object value) {
         addParam(value);
     }
 
+    /**
+     * 添加Label，用来推断逻辑运算符及实际操作符
+     */
     @Override
     public void visitLabel(Label label) {
         labels.add(label);
     }
 
+    /**
+     * 解析完成，返回推断出的sql
+     */
     @Override
     public void visitEnd() {
         classVisitor.setSqlSegment(inferSqlSegment());
     }
 
+    /**
+     * 推断出逻辑运算符及实际操作符，组合最终的sql
+     */
     private String inferSqlSegment() {
+        //Predicate只有一个条件表达式且使用equals或contains方法,则labels为空，直接获取sql返回
         if (labels.isEmpty()) {
-            validateCondition(operator);
-            return String.format(getSqlSegment(operator), operator);
+            validateCondition(operatorFromMethod);
+            return String.format(getSqlSegment(operatorFromMethod), operatorFromMethod);
         }
+        //若Predicate有多个条件表达式，则通过以下方式推断最终true或false对应的标签
         int startIndex;
         Label trueLabel;
         int size = labels.size();
         Object beforeGoto = labels.get(size - 4);
+        //若倒数第四个为Label类型，则表示包含逻辑或表达式，此Label为true标签，需从倒数第5个Label推断
         if (beforeGoto instanceof Label) {
             startIndex = size - 5;
             trueLabel = (Label) beforeGoto;
-        } else {
+        } else {//若倒数第四个非Label类型，则表示只有逻辑与表达式，没有true标签，需从倒数第3个Label推断
             trueLabel = null;
             startIndex = size - 3;
         }
 
+        /*
+         * 根据编译器编译逻辑来反向推断完整的表达式
+         *  1、若当前条件表达式与下一个条件表达式为逻辑与关系，则对当前操作符取反（因为取反后如果为true，直接结束）
+         *  2、若当前条件表达式与下一个条件表达式为逻辑或关系，则保持当前操作符（因为如果结果为true，直接结束）
+         * 通过visit后的Label列表，从下往上推断
+         *  1、若列表对象为{@link LabelExpression}类型
+         *      a、判断为false标签，则表示与下一个条件表达式为逻辑与关系，且需要取反
+         *      b、判断为true标签，则表示与下一个条件表达式为逻辑或关系，且不需要取反
+         *      c、若非true或false标签，判断跳转的标签，与当前的LabelExpression中间存在其他LabelExpression（通过labelDepth变量判断）
+         *         则表示与下一个条件表达式为与关系，需要取反，且为，添加起始符（左括号）
+         *  2、若列表对象为{@link Label}类型，则表示有LabelExpression需要跳转至此，添加到pendingLabels列表，并添加结束符（右括号）
+         */
         Integer labelDepth = null;
         List<Label> pendingLabels = new ArrayList<>();
         Label falseLabel = (Label) labels.get(size - 2);
@@ -276,6 +366,8 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 pendingLabels.add((Label) label);
             }
         }
+
+        //通过推断后的条件表达式，构造最终的sql
         StringBuilder builder = new StringBuilder();
         for (int i = expressions.size() - 1; i >= 0; i--) {
             LabelExpression expression = expressions.get(i);
@@ -290,6 +382,9 @@ public class LambdaMethodVisitor extends MethodVisitor {
         return builder.toString();
     }
 
+    /**
+     * 添加常量参数
+     */
     private void addParam(Object param) {
         perConditionParamCount++;
         if (Objects.isNull(column)) {
@@ -300,19 +395,28 @@ public class LambdaMethodVisitor extends MethodVisitor {
         paramMap.put(paramName, param);
     }
 
+    /**
+     * 每一个条件表达式构造完成后，清除对应标识
+     */
     private void clearVariables() {
         this.column = null;
-        this.operator = null;
         this.reverse = false;
-        this.hasParam = false;
+        this.hasCapturedArg = false;
+        this.operatorFromMethod = null;
         this.paramNameBuilder = new StringBuilder(LAMBDA_DOT_PARAM_MAP);
     }
 
+    /**
+     * 判断方法是否为装箱或拆箱方法
+     */
     private boolean isBoxingMethod(String owner, String name) {
         Class<?> resultClass = ReflectionUtils.getClass(Type.getObjectType(owner).getClassName());
         return Number.class.isAssignableFrom(resultClass) && NUMBER_BOXING_METHODS.contains(name);
     }
 
+    /**
+     * 通过不同操作符，构造对应的sql语句
+     */
     private String getSqlSegment(String finalOperator) {
         String segment = column + SPACE + "%s";
         if (IS_NOT_NULL.equals(finalOperator) || IS_NULL.equals(finalOperator)) {
@@ -333,6 +437,9 @@ public class LambdaMethodVisitor extends MethodVisitor {
         return segment + SPACE + paramSegment;
     }
 
+    /**
+     * 若变量参数为Collection类型，通过MetaObject及变量名路径，获取对应size，用来构造IN中的参数名
+     */
     private int getParamListSize() {
         Object paramValue = paramMap;
         String paramName = paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY);
@@ -346,14 +453,20 @@ public class LambdaMethodVisitor extends MethodVisitor {
         throw new MybatisLambdaException("param type [" + paramValue.getClass().getName() + "] not support in operation");
     }
 
+    /**
+     * 验证条件表达式是否正确，
+     */
     private void validateCondition(String finalOperation) {
         Assert.isTrue(perConditionParamCount == 1 ||
                 (perConditionParamCount == 0 && NULLABLE_OPERATOR.contains(finalOperation)), "Conditional formatting error. Must contain both an property and a parameter");
         perConditionParamCount = 0;
     }
 
-    private String negate(String negateOperator) {
-        switch (negateOperator) {
+    /**
+     * 操作符取反
+     */
+    private String negate(String operator) {
+        switch (operator) {
             case LESS_THAN:
                 return GREATER_THAN_AND_EQUAL;
             case LESS_THAN_AND_EQUAL:
@@ -371,11 +484,14 @@ public class LambdaMethodVisitor extends MethodVisitor {
             case NOT_EQUAL:
                 return EQUAL;
         }
-        return negateOperator;
+        return operator;
     }
 
-    private String reverse(String reverseOperator) {
-        switch (reverseOperator) {
+    /**
+     * 操作符反转
+     */
+    private String reverse(String operator) {
+        switch (operator) {
             case LESS_THAN:
                 return GREATER_THAN;
             case LESS_THAN_AND_EQUAL:
@@ -385,7 +501,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
             case GREATER_THAN_AND_EQUAL:
                 return LESS_THAN_AND_EQUAL;
         }
-        return reverseOperator;
+        return operator;
     }
 
     private static class LabelExpression {
