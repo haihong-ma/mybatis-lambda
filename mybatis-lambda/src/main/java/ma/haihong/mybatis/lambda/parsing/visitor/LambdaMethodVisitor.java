@@ -347,9 +347,9 @@ public class LambdaMethodVisitor extends MethodVisitor {
          *  2、若列表对象为{@link Label}类型，则表示有LabelExpression需要跳转至此，添加到pendingLabels列表，并添加结束符（右括号）
          */
         Integer labelDepth = null;
-        List<Label> pendingLabels = new ArrayList<>();
         Label falseLabel = (Label) labels.get(size - 2);
         List<LabelExpression> expressions = new ArrayList<>();
+        Map<Label, LabelExpression> pendingLabelMap = new HashMap<>();
         for (int i = startIndex; i >= 0; i--) {
             Object label = labels.get(i);
             if (label instanceof LabelExpression) {
@@ -361,10 +361,17 @@ public class LambdaMethodVisitor extends MethodVisitor {
                     expression.setNegation(false);
                     expression.setLogical(OR);
                 } else {
-                    if (pendingLabels.contains(expression.getLabel()) && labelDepth > 1) {
+                    Label expressionLabel = expression.getLabel();
+                    if (pendingLabelMap.containsKey(expressionLabel) && labelDepth > 1) {
                         expression.setLogical(AND);
                         expression.setNegation(true);
                         expression.setLeftBracket(LEFT_BRACKET);
+                        LabelExpression handleExpression = pendingLabelMap.get(expressionLabel);
+                        if (Objects.isNull(handleExpression)) {
+                            pendingLabelMap.put(expressionLabel, expression);
+                        } else {
+                            handleExpression.setLeftBracket(EMPTY);
+                        }
                     }
                 }
                 if (Objects.nonNull(labelDepth)) {
@@ -378,7 +385,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 }
             } else {
                 labelDepth = 1;
-                pendingLabels.add((Label) label);
+                pendingLabelMap.put((Label) label, null);
             }
         }
 
