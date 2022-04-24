@@ -56,6 +56,10 @@ public class LambdaMethodVisitor extends MethodVisitor {
      * 用来判断表达式的每个条件，是否符合一个属性对应一个变量（或常量）参数
      */
     private int perConditionParamCount = 0;
+    /**
+     * 标识条件表达式两边是否都为列名，用来判断是否使用equals(null)
+     */
+    private boolean multiColumn;
 
     /**
      * 调用visitJumpInsn方法或visitLabel方法对应的Label，通过调用顺利来推断实际操作符及逻辑运算符
@@ -127,6 +131,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
             paramNameBuilder.append(DOT).append(PropertyNamer.methodToProperty(name));
         } else {
             if (name.startsWith(GET_METHOD_PREFIX)) {
+                multiColumn = Objects.nonNull(column);
                 column = TableUtils.propertyToColumn(classVisitor.getEntityClass(), PropertyNamer.methodToProperty(name));
             } else if (EQUALS_METHOD.equals(name)) {
                 Assert.notNull(column, "only support entity column use equals method");
@@ -204,8 +209,16 @@ public class LambdaMethodVisitor extends MethodVisitor {
                     operator = IS_NOT_NULL;
                     break;
             }
+            if (Objects.nonNull(operator) && !NULLABLE_OPERATOR.contains(operator)) {
+                //处理与常量0比较情况
+                if (!paramMap.containsKey(paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY))) {
+                    addParam(0);
+                }
+            }
         } else if (Opcodes.IFEQ == opcode) {
-            operator = negate(operatorFromMethod);
+            operator = negate(handleEqualNull(operatorFromMethod));
+        } else if (Opcodes.IFNE == opcode) {
+            operator = handleEqualNull(operatorFromMethod);
         }
         String sqlSegment = Objects.nonNull(operator) ? getSqlSegment(operator) : null;
         labels.add(new LabelExpression(label, reverse, operator, sqlSegment));
@@ -302,8 +315,9 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private String inferSqlSegment() {
         //Predicate只有一个条件表达式且使用equals或contains方法,则labels为空，直接获取sql返回
         if (labels.isEmpty()) {
-            validateCondition(operatorFromMethod);
-            return String.format(getSqlSegment(operatorFromMethod), operatorFromMethod);
+            String finalOperator = handleEqualNull(operatorFromMethod);
+            validateCondition(finalOperator);
+            return String.format(getSqlSegment(finalOperator), finalOperator);
         }
         //若Predicate有多个条件表达式，则通过以下方式推断最终true或false对应的标签
         int startIndex;
@@ -460,6 +474,10 @@ public class LambdaMethodVisitor extends MethodVisitor {
         Assert.isTrue(perConditionParamCount == 1 ||
                 (perConditionParamCount == 0 && NULLABLE_OPERATOR.contains(finalOperation)), "Conditional formatting error. Must contain both an property and a parameter");
         perConditionParamCount = 0;
+    }
+
+    private String handleEqualNull(String operator) {
+        return perConditionParamCount == 0 && !multiColumn ? IS_NULL : operator;
     }
 
     /**
