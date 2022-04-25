@@ -53,7 +53,7 @@ class DemoApplicationTests {
         SampleDO sample = sampleMapper.findById(id);
         List<SampleDO> samples = sampleMapper.findByIds(ids);
         SampleDO sample1 = sampleMapper.lambda().where(w -> w.getId() == id).findOne();
-        List<SampleDO> samples1 = sampleMapper.lambda().where(w -> names.contains(w.getName())).findList();
+        List<SampleDO> samples1 = sampleMapper.lambda().where(w -> names.contains(w.getName()) || w.getAge() == 18).findList();
 
         String name1 = sampleMapper.lambda().where(w -> w.getId() == id).select(SampleDO::getName).findOne();
         List<String> names1 = sampleMapper.lambda().where(w -> ids.contains(w.getId())).select(SampleDO::getName).findList();
