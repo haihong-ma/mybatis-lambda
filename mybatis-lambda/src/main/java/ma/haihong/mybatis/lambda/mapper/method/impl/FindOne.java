@@ -26,19 +26,16 @@ public class FindOne extends AbstractMethod {
 
     @Override
     protected String initSqlScript() {
-        String tablePrefix = SqlScriptUtils.lambdaSqlSegment(TABLE_PREFIX);
-        String joinSegment = SqlScriptUtils.lambdaSqlSegment(JOIN_SEGMENT);
         String whereSegment = SqlScriptUtils.convertIf(SqlScriptUtils.convertWhere(SqlScriptUtils.unSafeParam(LAMBDA_DOT + WHERE_SEGMENT)), SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
         String groupBySegment = SqlScriptUtils.lambdaSqlSegment(GROUP_BY_SEGMENT);
         String orderBySegment = SqlScriptUtils.lambdaSqlSegment(ORDER_BY_SEGMENT);
         String selectChooseSegment = SqlScriptUtils.convertChoose(SqlScriptUtils.stringNullableSqlSegment(LAMBDA_DOT + SELECT_SEGMENT),
                 SqlScriptUtils.unSafeParam(LAMBDA_DOT + SELECT_SEGMENT), tableInfo.getAllColumnSqlSegment());
         String selectSegment = SqlScriptUtils.convertIf(selectChooseSegment, SqlScriptUtils.objectNullableSqlSegment(LAMBDA), true);
-        return String.format(sqlTemplate.getSqlScript(), selectSegment,
-                tablePrefix + tableInfo.getTableName(), joinSegment, whereSegment, groupBySegment, orderBySegment);
+        return String.format(sqlTemplate.getSqlScript(), selectSegment, tableInfo.getTableName(), whereSegment, groupBySegment, orderBySegment);
     }
 
-    protected Class<?> getResultType(){
+    protected Class<?> getResultType() {
         return tableInfo.getEntityClass();
     }
 }

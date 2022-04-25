@@ -36,7 +36,9 @@ public class TableUtils {
     }
 
     public static String propertyToColumn(Class<?> entityClass, String propertyName) {
-        return initTableInfo(entityClass).getColumnByProperty(propertyName);
+        String column = initTableInfo(entityClass).getColumnByProperty(propertyName);
+        Assert.isNotBlank(column, "can't find property [%s] from class [%s]", propertyName, entityClass.getName());
+        return column;
     }
 
     private static String initTableName(Class<?> entityClass) {

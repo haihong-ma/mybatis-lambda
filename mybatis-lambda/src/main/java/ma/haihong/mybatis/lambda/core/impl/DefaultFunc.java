@@ -82,16 +82,8 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
         return this;
     }
 
-    public String getTablePrefix() {
-        return EMPTY;
-    }
-
     public String getSelectSegment() {
         return selectSegment;
-    }
-
-    public String getJoinSegment() {
-        return EMPTY;
     }
 
     public String getWhereSegment() {
