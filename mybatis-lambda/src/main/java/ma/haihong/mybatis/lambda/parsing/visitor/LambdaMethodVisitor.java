@@ -141,7 +141,11 @@ public class LambdaMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-        super.visitFieldInsn(opcode, owner, name, descriptor);
+        if (hasCapturedArg) {
+            paramNameBuilder.append(DOT).append(name);
+        } else {
+            column = TableUtils.propertyToColumn(classVisitor.getEntityClass(), name);
+        }
     }
 
     /**
