@@ -84,6 +84,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
             Arrays.asList("intValue", "longValue", "floatValue", "doubleValue", "byteValue", "shortValue", "valueOf");
     private final static List<String> NULLABLE_OPERATOR = Arrays.asList(IS_NULL, IS_NOT_NULL);
     private final static List<String> IN_OPERATOR = Arrays.asList(IN, NOT_IN);
+    private final static List<String> LIKE_OPERATOR = Arrays.asList(LIKE, NOT_LIKE);
 
     public LambdaMethodVisitor(LambdaClassVisitor classVisitor, HashMap<String, Object> paramMap) {
         super(Opcodes.ASM5);
@@ -464,7 +465,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
         if (NULLABLE_OPERATOR.contains(operator) || IN_OPERATOR.contains(operator)) {
             return segment;
         }
-        if (LIKE.equals(operator)) {
+        if (LIKE_OPERATOR.contains(operator)) {
             return segment + SPACE + SqlScriptUtils.convertLike(paramName);
         }
         return segment + SPACE + SqlScriptUtils.safeParam(paramName);
@@ -506,8 +507,12 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 return EQUAL;
             case IN:
                 return NOT_IN;
+            case NOT_IN:
+                return IN;
             case LIKE:
                 return NOT_LIKE;
+            case NOT_LIKE:
+                return LIKE;
         }
         return operator;
     }
