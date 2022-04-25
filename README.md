@@ -60,6 +60,7 @@ class DemoApplicationTests {
 
         //聚合查询
         int maxAge = sampleMapper.lambda().max(SampleDO::getAge);
+        int minAge = sampleMapper.lambda().min(SampleDO::getAge);
         long count = sampleMapper.lambda().where(w -> names.contains(w.getName())).count();
         long distinctAgeCount = sampleMapper.lambda().where(w -> w.getName().contains("ma")).count(SampleDO::getAge, true);
 
