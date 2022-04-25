@@ -1,7 +1,7 @@
 # mybatis-lambda
 使用此框架，可以直接通过Lambda表达式操作数据库，使用步骤如下
-1. 执行命令git clone https://github.com/haihong-ma/mybatis-lambda下载源码
-2. 执行命令mvn clean install安装包到本地仓库
+1. 执行命令`git clone https://github.com/haihong-ma/mybatis-lambda`下载源码
+2. 执行命令`mvn clean install`安装包到本地仓库
 3. 新建spring boot项目，在pom文件中添加如下依赖
 ```xml
 <dependency>
