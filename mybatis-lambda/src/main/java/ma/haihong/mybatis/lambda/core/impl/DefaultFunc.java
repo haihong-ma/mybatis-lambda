@@ -11,12 +11,10 @@ import ma.haihong.mybatis.lambda.parsing.LambdaUtils;
 import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 import ma.haihong.mybatis.lambda.parsing.model.ParsedResult;
+import ma.haihong.mybatis.lambda.parsing.model.PropertyInfo;
 import ma.haihong.mybatis.lambda.util.Assert;
-import ma.haihong.mybatis.lambda.util.ReflectionUtils;
 import ma.haihong.mybatis.lambda.util.TableUtils;
-import org.apache.ibatis.reflection.property.PropertyNamer;
 
-import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +39,6 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
 
     protected static final String WHERE_PREDICATE_NULL_TIP = "where predicate can't be null";
     protected static final String SELECT_FUNCTION_NULL_TIP = "select column can't be null";
-    protected static final String ENTITY_CLASS_RESOLVE_FAILED_TIP = "entity class resolve failed";
 
     public DefaultFunc(LambdaMapper<T> mapper) {
         this.mapper = mapper;
@@ -62,7 +59,7 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     @Override
     public SelectAndOrderByFuncAndQueryAction<T> where(SPredicate<T> where) {
         assertWherePredicateNotNull(where);
-        ParsedResult result = LambdaUtils.parseToSql(where);
+        ParsedResult result = LambdaUtils.parse(where);
         paramMap = result.getParamMap();
         whereSegment = result.getSqlSegment();
         return this;
@@ -107,10 +104,8 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     }
 
     protected String convertToColumnName(SFunction<T, ?> column) {
-        SerializedLambda lambda = LambdaUtils.parse(column);
-        Class<?> entityClass = ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass()));
-        Assert.notNull(entityClass, ENTITY_CLASS_RESOLVE_FAILED_TIP);
-        return TableUtils.propertyToColumn(entityClass, PropertyNamer.methodToProperty(lambda.getImplMethodName()));
+        PropertyInfo propertyInfo = LambdaUtils.parse(column);
+        return TableUtils.propertyToColumn(propertyInfo.getEntityClass(), propertyInfo.getPropertyName());
     }
 
     protected void assertWherePredicateNotNull(SPredicate<T> where) {

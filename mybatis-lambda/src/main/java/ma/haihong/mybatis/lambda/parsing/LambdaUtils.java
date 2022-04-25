@@ -5,9 +5,11 @@ import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 import ma.haihong.mybatis.lambda.parsing.model.ParsedCache;
 import ma.haihong.mybatis.lambda.parsing.model.ParsedResult;
+import ma.haihong.mybatis.lambda.parsing.model.PropertyInfo;
 import ma.haihong.mybatis.lambda.parsing.visitor.LambdaClassVisitor;
 import ma.haihong.mybatis.lambda.util.Assert;
 import ma.haihong.mybatis.lambda.util.BeanUtils;
+import ma.haihong.mybatis.lambda.util.ReflectionUtils;
 import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 import org.objectweb.asm.ClassReader;
@@ -15,12 +17,10 @@ import org.objectweb.asm.ClassReader;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
@@ -33,28 +33,23 @@ import static ma.haihong.mybatis.lambda.constant.ParamConstants.PARAM;
 public class LambdaUtils {
 
     private static final String SERIALIZABLE_WRITE_REPLACE_METHOD = "writeReplace";
-    private static final Map<String, ParsedCache> PARSED_CACHE_MAP = new ConcurrentHashMap<>();
     private static final Map<String, ClassReader> CLASS_READER_CACHE = new ConcurrentHashMap<>();
-    private static final Map<String, WeakReference<SerializedLambda>> FUNC_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, PropertyInfo> FUNC_PARSED_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, ParsedCache> PREDICATE_PARSED_CACHE = new ConcurrentHashMap<>();
 
-    public static <T, R> String parseToProperty(SFunction<T, R> func) {
-        return PropertyNamer.methodToProperty(parse(func).getImplMethodName());
+    public static <T, R> PropertyInfo parse(SFunction<T, R> func) {
+        return FUNC_PARSED_CACHE.computeIfAbsent(func.getClass().getName(), className -> {
+            SerializedLambda lambda = doParse(func);
+            String propertyName = PropertyNamer.methodToProperty(lambda.getImplMethodName());
+            Class<?> entityClass = ReflectionUtils.getClass(ReflectionUtils.convertNameWithDOT(lambda.getImplClass()));
+            Assert.notNull(entityClass, "entity class resolve failed");
+            return new PropertyInfo(propertyName, entityClass);
+        });
     }
 
-    public static <T, R> SerializedLambda parse(SFunction<T, R> func) {
-        String className = func.getClass().getName();
-        return Optional.ofNullable(FUNC_CACHE.get(className))
-                .map(WeakReference::get)
-                .orElseGet(() -> {
-                    SerializedLambda serializedLambda = doParse(func);
-                    FUNC_CACHE.put(className, new WeakReference<>(serializedLambda));
-                    return serializedLambda;
-                });
-    }
-
-    public static <T> ParsedResult parseToSql(SPredicate<T> predicate) {
+    public static <T> ParsedResult parse(SPredicate<T> predicate) {
         LambdaWrapper lambdaWrapper = new LambdaWrapper();
-        ParsedCache parsedCache = PARSED_CACHE_MAP.computeIfAbsent(predicate.getClass().getName(), (className) -> {
+        ParsedCache parsedCache = PREDICATE_PARSED_CACHE.computeIfAbsent(predicate.getClass().getName(), (className) -> {
             SerializedLambda lambda = doParse(predicate);
             lambdaWrapper.setLambda(lambda);
             LambdaClassVisitor visitor = new LambdaClassVisitor(lambda);
@@ -66,10 +61,6 @@ public class LambdaUtils {
             AddCapturedArg(predicate, cloneParamMap, lambdaWrapper);
         }
         return new ParsedResult(buildSqlSegment(parsedCache.getParamSqlSegmentsMap(), cloneParamMap), cloneParamMap);
-    }
-
-    public static <T> SerializedLambda parse(SPredicate<T> predicate) {
-        return doParse(predicate);
     }
 
     private static <T extends Serializable> SerializedLambda doParse(T lambda) {

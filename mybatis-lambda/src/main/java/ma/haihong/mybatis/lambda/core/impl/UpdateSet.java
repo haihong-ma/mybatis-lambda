@@ -27,9 +27,7 @@ public class UpdateSet<T> {
 
     Map<String, Object> getParamMap() {
         Map<String, Object> paramMap = new HashMap<>();
-        updateMap.forEach((key, value) -> {
-            paramMap.put(LambdaUtils.parseToProperty(key), value);
-        });
+        updateMap.forEach((key, value) -> paramMap.put(LambdaUtils.parse(key).getPropertyName(), value));
         return paramMap;
     }
 }
