@@ -1,16 +1,12 @@
 package ma.haihong.mybatis.lambda.parsing.visitor;
 
 import ma.haihong.mybatis.lambda.exception.MybatisLambdaException;
+import ma.haihong.mybatis.lambda.parsing.model.ParsedCache;
 import ma.haihong.mybatis.lambda.util.Assert;
 import ma.haihong.mybatis.lambda.util.ReflectionUtils;
 import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 import ma.haihong.mybatis.lambda.util.TableUtils;
-import org.apache.ibatis.reflection.DefaultReflectorFactory;
-import org.apache.ibatis.reflection.MetaObject;
-import org.apache.ibatis.reflection.ReflectorFactory;
 import org.apache.ibatis.reflection.property.PropertyNamer;
-import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
-import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -18,8 +14,6 @@ import org.objectweb.asm.Type;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_DOT_PARAM_MAP;
@@ -76,11 +70,8 @@ public class LambdaMethodVisitor extends MethodVisitor {
      * 变量参数在{@link LambdaClassVisitor#visitMethod(int, String, String, String, String[])} ()}中初始化
      * 常量参数在visitXXX方法中添加
      */
-    private final Map<String, Object> paramMap;
+    private final HashMap<String, Object> paramMap;
     private final LambdaClassVisitor classVisitor;
-
-    private final ReflectorFactory reflectorFactory;
-    private final ObjectWrapperFactory objectWrapperFactory;
 
     /**
      * 判断equals或contains调用者是否为字符串，由此判断使用IN或者LIKE
@@ -92,17 +83,15 @@ public class LambdaMethodVisitor extends MethodVisitor {
     private final static List<String> NUMBER_BOXING_METHODS =
             Arrays.asList("intValue", "longValue", "floatValue", "doubleValue", "byteValue", "shortValue", "valueOf");
     private final static List<String> NULLABLE_OPERATOR = Arrays.asList(IS_NULL, IS_NOT_NULL);
+    private final static List<String> IN_OPERATOR = Arrays.asList(IN, NOT_IN);
 
-    public LambdaMethodVisitor(LambdaClassVisitor classVisitor, Map<String, Object> paramMap) {
+    public LambdaMethodVisitor(LambdaClassVisitor classVisitor, HashMap<String, Object> paramMap) {
         super(Opcodes.ASM5);
         this.paramMap = paramMap;
         this.labels = new ArrayList<>();
         this.classVisitor = classVisitor;
         this.paramNameBuilder = new StringBuilder(LAMBDA_DOT_PARAM_MAP);
         this.paramIndex = new AtomicInteger(classVisitor.getCapturedArgCount());
-
-        this.reflectorFactory = new DefaultReflectorFactory();
-        this.objectWrapperFactory = new DefaultObjectWrapperFactory();
     }
 
     /**
@@ -211,8 +200,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
             }
             if (Objects.nonNull(operator) && !NULLABLE_OPERATOR.contains(operator)) {
                 //处理与常量0比较情况
-                String realParamName = paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY).split(REGEX_DOT)[0];
-                if (!paramMap.containsKey(realParamName)) {
+                if (!hasCapturedArg && perConditionParamCount == 0) {
                     addParam(0);
                 }
             }
@@ -221,8 +209,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
         } else if (Opcodes.IFNE == opcode) {
             operator = handleEqualNull(operatorFromMethod);
         }
-        String sqlSegment = Objects.nonNull(operator) ? getSqlSegment(operator) : null;
-        labels.add(new LabelExpression(label, reverse, operator, sqlSegment));
+        labels.add(new LabelExpression(label, reverse, operator, column, paramNameBuilder.toString()));
         clearVariables();
         validateCondition(operator);
     }
@@ -307,19 +294,56 @@ public class LambdaMethodVisitor extends MethodVisitor {
      */
     @Override
     public void visitEnd() {
-        classVisitor.setSqlSegment(inferSqlSegment());
+        removeInvalidParam();
+        classVisitor.setParsedCache(buildParsedCache());
     }
 
     /**
-     * 推断出逻辑运算符及实际操作符，组合最终的sql
+     * 删除没用的参数(最后两个参数为逻辑表达式结果值)
      */
-    private String inferSqlSegment() {
+    private void removeInvalidParam() {
+        int size = paramMap.size();
+        List<String> invalidParamNames = Arrays.asList(PARAM + (size - 1), PARAM + (size - 2));
+        paramMap.keySet().removeIf(invalidParamNames::contains);
+
+    }
+
+    private ParsedCache buildParsedCache() {
+        Map<String, String> paramSqlSegmentsMap = new LinkedHashMap<>();
         //Predicate只有一个条件表达式且使用equals或contains方法,则labels为空，直接获取sql返回
         if (labels.isEmpty()) {
             String finalOperator = handleEqualNull(operatorFromMethod);
             validateCondition(finalOperator);
-            return String.format(getSqlSegment(finalOperator), finalOperator);
+            String inParamName = IN_OPERATOR.contains(finalOperator) ? paramNameBuilder.toString() : null;
+            paramSqlSegmentsMap.put(inParamName, buildSqlSegment(column, finalOperator, paramNameBuilder.toString()));
+            return new ParsedCache(paramMap, paramSqlSegmentsMap, classVisitor.hasCapturedArg());
         }
+
+        List<LabelExpression> expressions = inferExpression();
+        StringBuilder builder = new StringBuilder();
+        for (int i = expressions.size() - 1; i >= 0; i--) {
+            LabelExpression expression = expressions.get(i);
+            String negateOperator = expression.isNegation() ? negate(expression.getOperator()) : expression.getOperator();
+            String finalOperator = expression.isReverse() ? reverse(negateOperator) : negateOperator;
+            builder.append(expression.getLeftBracket())
+                    .append(buildSqlSegment(expression.getColumn(), finalOperator, expression.getParamName()));
+
+            if (IN_OPERATOR.contains(finalOperator)) {
+                paramSqlSegmentsMap.put(expression.getParamName(), builder.toString());
+                builder = new StringBuilder();
+            }
+            builder.append(expression.getRightBracket())
+                    .append(SPACE).append(expression.getLogical()).append(SPACE);
+        }
+        builder.delete(builder.lastIndexOf(AND), builder.length());
+        paramSqlSegmentsMap.put(null, builder.toString());
+        return new ParsedCache(paramMap, paramSqlSegmentsMap, classVisitor.hasCapturedArg());
+    }
+
+    /**
+     * 推断出逻辑运算符及实际操作符
+     */
+    private List<LabelExpression> inferExpression() {
         //若Predicate有多个条件表达式，则通过以下方式推断最终true或false对应的标签
         int startIndex;
         Label trueLabel;
@@ -366,10 +390,10 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 } else {
                     Label expressionLabel = expression.getLabel();
                     if (pendingLabelMap.containsKey(expressionLabel) && labelDepth > 1) {
-                        if (Objects.nonNull(trueLabel)){
+                        if (Objects.nonNull(trueLabel)) {
                             expression.setLogical(AND);
                             expression.setNegation(true);
-                        }else {
+                        } else {
                             expression.setLogical(OR);
                             expression.setNegation(false);
                         }
@@ -396,20 +420,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
                 pendingLabelMap.put((Label) label, null);
             }
         }
-
-        //通过推断后的条件表达式，构造最终的sql
-        StringBuilder builder = new StringBuilder();
-        for (int i = expressions.size() - 1; i >= 0; i--) {
-            LabelExpression expression = expressions.get(i);
-            String negateOperator = expression.isNegation() ? negate(expression.getOperator()) : expression.getOperator();
-            String finalOperator = expression.isReverse() ? reverse(negateOperator) : negateOperator;
-            builder.append(expression.getLeftBracket())
-                    .append(String.format(expression.getSqlSegment(), finalOperator))
-                    .append(expression.getRightBracket())
-                    .append(SPACE).append(expression.getLogical()).append(SPACE);
-        }
-        builder.delete(builder.lastIndexOf(AND), builder.length());
-        return builder.toString();
+        return expressions;
     }
 
     /**
@@ -446,41 +457,17 @@ public class LambdaMethodVisitor extends MethodVisitor {
 
     /**
      * 通过不同操作符，构造对应的sql语句
+     * IN操作不包含参数名
      */
-    private String getSqlSegment(String finalOperator) {
-        String segment = column + SPACE + "%s";
-        if (IS_NOT_NULL.equals(finalOperator) || IS_NULL.equals(finalOperator)) {
+    private String buildSqlSegment(String column, String operator, String paramName) {
+        String segment = column + SPACE + operator;
+        if (NULLABLE_OPERATOR.contains(operator) || IN_OPERATOR.contains(operator)) {
             return segment;
         }
-        String paramSegment;
-        String paramName = paramNameBuilder.toString();
-        if (IN.equals(finalOperator)) {
-            String inSegment = IntStream.range(0, getParamListSize())
-                    .mapToObj(index -> HASH_LEFT_BRACE + paramName + LEFT_SQUARE_BRACKET + index + RIGHT_SQUARE_BRACKET + RIGHT_BRACE)
-                    .collect(Collectors.joining(COMMA));
-            paramSegment = LEFT_BRACKET + inSegment + RIGHT_BRACKET;
-        } else if (LIKE.equals(finalOperator)) {
-            paramSegment = SqlScriptUtils.convertLike(paramName);
-        } else {
-            paramSegment = SqlScriptUtils.safeParam(paramName);
+        if (LIKE.equals(operator)) {
+            return segment + SPACE + SqlScriptUtils.convertLike(paramName);
         }
-        return segment + SPACE + paramSegment;
-    }
-
-    /**
-     * 若变量参数为Collection类型，通过MetaObject及变量名路径，获取对应size，用来构造IN中的参数名
-     */
-    private int getParamListSize() {
-        Object paramValue = paramMap;
-        String paramName = paramNameBuilder.toString().replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY);
-        for (String item : paramName.split(REGEX_DOT)) {
-            MetaObject metaObject = MetaObject.forObject(paramValue, null, objectWrapperFactory, reflectorFactory);
-            paramValue = metaObject.getValue(item);
-        }
-        if (paramValue instanceof Collection) {
-            return ((Collection<?>) paramValue).size();
-        }
-        throw new MybatisLambdaException("param type [" + paramValue.getClass().getName() + "] not support in operation");
+        return segment + SPACE + SqlScriptUtils.safeParam(paramName);
     }
 
     /**
@@ -549,15 +536,17 @@ public class LambdaMethodVisitor extends MethodVisitor {
         private String rightBracket;
 
         private final Label label;
+        private final String column;
         private final boolean reverse;
         private final String operator;
-        private final String sqlSegment;
+        private final String paramName;
 
-        public LabelExpression(Label label, boolean reverse, String operator, String sqlSegment) {
+        public LabelExpression(Label label, boolean reverse, String operator, String column, String paramName) {
             this.label = label;
+            this.column = column;
             this.reverse = reverse;
             this.operator = operator;
-            this.sqlSegment = sqlSegment;
+            this.paramName = paramName;
             this.leftBracket = this.rightBracket = EMPTY;
         }
 
@@ -597,8 +586,12 @@ public class LambdaMethodVisitor extends MethodVisitor {
             return negation;
         }
 
-        public String getSqlSegment() {
-            return sqlSegment;
+        public String getColumn() {
+            return column;
+        }
+
+        public String getParamName() {
+            return paramName;
         }
 
         public String getLeftBracket() {

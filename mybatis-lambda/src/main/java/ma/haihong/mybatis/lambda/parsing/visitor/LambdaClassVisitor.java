@@ -1,7 +1,7 @@
 package ma.haihong.mybatis.lambda.parsing.visitor;
 
 
-import ma.haihong.mybatis.lambda.parsing.ParsedResult;
+import ma.haihong.mybatis.lambda.parsing.model.ParsedCache;
 import ma.haihong.mybatis.lambda.util.ReflectionUtils;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -12,20 +12,18 @@ import java.lang.invoke.SerializedLambda;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ma.haihong.mybatis.lambda.constant.ParamConstants.PARAM;
-
 /**
  * @author haihong.ma
  */
 public class LambdaClassVisitor extends ClassVisitor {
 
-    private ParsedResult parsedResult;
+    private ParsedCache parsedCache;
 
     private final String methodName;
     private final String methodDescriptor;
     private final SerializedLambda lambda;
     private final Class<?> entityClass;
-    private final Map<String, Object> paramMap;
+    private final HashMap<String, Object> paramMap;
 
     public LambdaClassVisitor(SerializedLambda lambda) {
         super(Opcodes.ASM5);
@@ -41,19 +39,15 @@ public class LambdaClassVisitor extends ClassVisitor {
         if (!(methodName.equals(name) && methodDescriptor.equals(descriptor))) {
             return null;
         }
-        for (int index = 0; index < getCapturedArgCount(); index++) {
-            paramMap.put(PARAM + index, getParam(index));
-        }
         return new LambdaMethodVisitor(this, paramMap);
     }
 
-    public ParsedResult getParseResult() {
-        return parsedResult;
+    public ParsedCache getParsedCache() {
+        return parsedCache;
     }
 
-    void setSqlSegment(String sqlSegment) {
-        System.out.println(sqlSegment);
-        parsedResult = new ParsedResult(sqlSegment, paramMap);
+    void setParsedCache(ParsedCache parsedCache) {
+        this.parsedCache = parsedCache;
     }
 
     int getCapturedArgCount() {
@@ -64,8 +58,8 @@ public class LambdaClassVisitor extends ClassVisitor {
         return lambda.getCapturedArgCount() > index;
     }
 
-    Object getParam(int index) {
-        return lambda.getCapturedArg(index);
+    boolean hasCapturedArg(){
+        return hasCapturedArg(0);
     }
 
     Class<?> getEntityClass() {

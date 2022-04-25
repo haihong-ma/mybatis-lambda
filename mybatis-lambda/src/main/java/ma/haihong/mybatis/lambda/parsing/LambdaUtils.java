@@ -3,8 +3,12 @@ package ma.haihong.mybatis.lambda.parsing;
 import ma.haihong.mybatis.lambda.exception.MybatisLambdaException;
 import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
+import ma.haihong.mybatis.lambda.parsing.model.ParsedCache;
+import ma.haihong.mybatis.lambda.parsing.model.ParsedResult;
 import ma.haihong.mybatis.lambda.parsing.visitor.LambdaClassVisitor;
 import ma.haihong.mybatis.lambda.util.Assert;
+import ma.haihong.mybatis.lambda.util.BeanUtils;
+import ma.haihong.mybatis.lambda.util.SqlScriptUtils;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 import org.objectweb.asm.ClassReader;
 
@@ -13,9 +17,15 @@ import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
+import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_DOT_PARAM_MAP;
+import static ma.haihong.mybatis.lambda.constant.ParamConstants.PARAM;
 
 /**
  * @author haihong.ma
@@ -23,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LambdaUtils {
 
     private static final String SERIALIZABLE_WRITE_REPLACE_METHOD = "writeReplace";
+    private static final Map<String, ParsedCache> PARSED_CACHE_MAP = new ConcurrentHashMap<>();
     private static final Map<String, ClassReader> CLASS_READER_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, WeakReference<SerializedLambda>> FUNC_CACHE = new ConcurrentHashMap<>();
 
@@ -42,10 +53,19 @@ public class LambdaUtils {
     }
 
     public static <T> ParsedResult parseToSql(SPredicate<T> predicate) {
-        SerializedLambda lambda = doParse(predicate);
-        LambdaClassVisitor visitor = new LambdaClassVisitor(lambda);
-        initClassReader(lambda, predicate.getClass().getClassLoader()).accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        return visitor.getParseResult();
+        LambdaWrapper lambdaWrapper = new LambdaWrapper();
+        ParsedCache parsedCache = PARSED_CACHE_MAP.computeIfAbsent(predicate.getClass().getName(), (className) -> {
+            SerializedLambda lambda = doParse(predicate);
+            lambdaWrapper.setLambda(lambda);
+            LambdaClassVisitor visitor = new LambdaClassVisitor(lambda);
+            initClassReader(lambda, predicate.getClass().getClassLoader()).accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            return visitor.getParsedCache();
+        });
+        Map<String, Object> cloneParamMap = parsedCache.getCloneParamMap();
+        if (parsedCache.hasCapturedArg()) {
+            AddCapturedArg(predicate, cloneParamMap, lambdaWrapper);
+        }
+        return new ParsedResult(buildSqlSegment(parsedCache.getParamSqlSegmentsMap(), cloneParamMap), cloneParamMap);
     }
 
     public static <T> SerializedLambda parse(SPredicate<T> predicate) {
@@ -77,5 +97,87 @@ public class LambdaUtils {
                 throw new MybatisLambdaException("read class file [" + classFilePath + "] error", e);
             }
         });
+    }
+
+    private static void AddCapturedArg(SPredicate<?> predicate, Map<String, Object> paramMap, LambdaWrapper lambdaWrapper) {
+        SerializedLambda lambda = lambdaWrapper.getLambda();
+        if (Objects.isNull(lambda)) {
+            lambda = doParse(predicate);
+        }
+        for (int index = 0; index < lambda.getCapturedArgCount(); index++) {
+            paramMap.put(PARAM + index, lambda.getCapturedArg(index));
+        }
+    }
+
+    private static String buildSqlSegment(Map<String, String> sqlSegmentMap, Map<String, Object> paramMap) {
+        StringBuilder sqlSegmentBuilder = new StringBuilder();
+        sqlSegmentMap.forEach((paramName, sqlSegment) -> {
+            sqlSegmentBuilder.append(sqlSegment);
+            if (Objects.nonNull(paramName)) {
+                String realParamName = paramName;
+                CollectionInfo collectionInfo = getCollectionInfo(paramMap, paramName);
+                if (collectionInfo.needOptimizeParam()) {
+                    String paramKey = PARAM + paramMap.size();
+                    realParamName = LAMBDA_DOT_PARAM_MAP + DOT + paramKey;
+                    paramMap.put(paramKey, collectionInfo.paramValue);
+                }
+                sqlSegmentBuilder.append(SqlScriptUtils.convertIn(realParamName, collectionInfo.getSize()));
+            }
+        });
+        return sqlSegmentBuilder.toString();
+    }
+
+    /**
+     * 若变量参数为Collection类型，通过MetaObject及变量名路径，获取对应size，用来构造IN中的参数名
+     */
+    private static CollectionInfo getCollectionInfo(Map<String, Object> paramMap, String paramName) {
+        Object paramValue = paramMap;
+        String[] paramNames = paramName.replace(LAMBDA_DOT_PARAM_MAP + DOT, EMPTY).split(REGEX_DOT);
+        for (String item : paramNames) {
+            paramValue = BeanUtils.getValue(paramValue, item);
+        }
+        if (paramValue instanceof Collection) {
+            return new CollectionInfo(((Collection<?>) paramValue), paramNames.length > 1);
+        }
+        throw new MybatisLambdaException("param type [" + paramValue.getClass().getName() + "] not support in operation");
+    }
+
+    private static class LambdaWrapper {
+        private SerializedLambda lambda;
+
+        public void setLambda(SerializedLambda lambda) {
+            this.lambda = lambda;
+        }
+
+        public SerializedLambda getLambda() {
+            return lambda;
+        }
+    }
+
+    private static class CollectionInfo {
+
+        private final Collection<?> paramValue;
+        /**
+         * 是否需要优化参数
+         * 若列表参数通过对象的getXXX方法获取，为提供mybatis解析参数效率，优化参数调用
+         */
+        private final boolean needOptimizeParam;
+
+        public CollectionInfo(Collection<?> paramValue, boolean needOptimizeParam) {
+            this.paramValue = paramValue;
+            this.needOptimizeParam = needOptimizeParam;
+        }
+
+        public int getSize() {
+            return paramValue.size();
+        }
+
+        public Collection<?> getParamValue() {
+            return paramValue;
+        }
+
+        public boolean needOptimizeParam() {
+            return needOptimizeParam;
+        }
     }
 }

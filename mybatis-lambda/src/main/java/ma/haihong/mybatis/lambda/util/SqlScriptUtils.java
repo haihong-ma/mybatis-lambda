@@ -1,5 +1,8 @@
 package ma.haihong.mybatis.lambda.util;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA;
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA_DOT;
@@ -19,6 +22,13 @@ public class SqlScriptUtils {
 
     public static String convertLike(String paramName) {
         return "concat('%', #{" + paramName + "}, '%')";
+    }
+
+    public static String convertIn(String paramName, int size) {
+        String inSegment = IntStream.range(0, size)
+                .mapToObj(index -> HASH_LEFT_BRACE + paramName + LEFT_SQUARE_BRACKET + index + RIGHT_SQUARE_BRACKET + RIGHT_BRACE)
+                .collect(Collectors.joining(COMMA));
+        return LEFT_BRACKET + inSegment + RIGHT_BRACKET;
     }
 
     /**
