@@ -10,7 +10,7 @@
     <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
-4. 定义实体（若不加注解，表名或字段名，将通过解析类名或属性名获得（驼峰转下划线））
+4. 定义实体（若不加注解(主键注解必须添加，否则不能使用XXXById(s)方法)，表名或字段名，将通过解析类名或属性名获得（驼峰转下划线））
 ```java
 @Data
 @TableName("sample_table")
