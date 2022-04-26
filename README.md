@@ -49,6 +49,21 @@ class DemoApplicationTests {
             setAge(18);
             setName("John");
         }};
+        SampleDO sampleParam1 = new SampleDO() {{
+            setId(2L);
+            setAge(28);
+            setName("name1");
+        }};
+        SampleDO sampleParam2 = new SampleDO() {{
+            setId(3L);
+            setAge(38);
+            setName("name2");
+        }};
+
+        //插入
+        sampleMapper.insert(sampleParam);
+        sampleMapper.insertList(Arrays.asList(sampleParam1,sampleParam2));
+        
         //查询
         SampleDO sample = sampleMapper.findById(id);
         List<SampleDO> samples = sampleMapper.findByIds(ids);
@@ -63,10 +78,6 @@ class DemoApplicationTests {
         int minAge = sampleMapper.lambda().min(SampleDO::getAge);
         long count = sampleMapper.lambda().where(w -> names.contains(w.getName())).count();
         long distinctAgeCount = sampleMapper.lambda().where(w -> w.getName().contains("ma")).count(SampleDO::getAge, true);
-
-        //插入
-        sampleMapper.insert(sampleParam);
-        sampleMapper.insertList(Collections.singletonList(sampleParam));
 
         //更新
         sampleMapper.lambda().update(sampleParam, w -> w.getId().equals(1L));
