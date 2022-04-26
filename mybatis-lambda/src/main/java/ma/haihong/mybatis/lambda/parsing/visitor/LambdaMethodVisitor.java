@@ -299,18 +299,7 @@ public class LambdaMethodVisitor extends MethodVisitor {
      */
     @Override
     public void visitEnd() {
-        removeInvalidParam();
         classVisitor.setParsedCache(buildParsedCache());
-    }
-
-    /**
-     * 删除没用的参数(最后两个参数为逻辑表达式结果值)
-     */
-    private void removeInvalidParam() {
-        int size = paramMap.size();
-        List<String> invalidParamNames = Arrays.asList(PARAM + (size - 1), PARAM + (size - 2));
-        paramMap.keySet().removeIf(invalidParamNames::contains);
-
     }
 
     private ParsedCache buildParsedCache() {
