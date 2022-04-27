@@ -1,6 +1,6 @@
-package ma.haihong.mybatis.lambda.core.fuc;
+package ma.haihong.mybatis.lambda.interfaces.fuc;
 
-import ma.haihong.mybatis.lambda.core.action.SelectAction;
+import ma.haihong.mybatis.lambda.interfaces.action.SelectAction;
 import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 
 /**

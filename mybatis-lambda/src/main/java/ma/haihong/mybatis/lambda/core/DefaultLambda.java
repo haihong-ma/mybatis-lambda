@@ -1,7 +1,7 @@
-package ma.haihong.mybatis.lambda.core.impl;
+package ma.haihong.mybatis.lambda.core;
 
-import ma.haihong.mybatis.lambda.core.Lambda;
-import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
+import ma.haihong.mybatis.lambda.interfaces.Lambda;
+import ma.haihong.mybatis.lambda.mapper.Mapper;
 import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 import ma.haihong.mybatis.lambda.util.Assert;
@@ -26,7 +26,7 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
     private static final String UPDATE_ENTITY_NULL_TIP = "entity can't be null";
     private static final String UPDATE_SET_NULL_TIP = "updateSet can't be null";
 
-    public DefaultLambda(LambdaMapper<T> mapper) {
+    public DefaultLambda(Mapper<T> mapper) {
         super(mapper);
     }
 

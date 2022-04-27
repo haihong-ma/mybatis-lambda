@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.spring.boot.config;
 
-import ma.haihong.mybatis.lambda.MybatisMapperRegistry;
+import ma.haihong.mybatis.lambda.core.MybatisMapperRegistry;
 import ma.haihong.mybatis.lambda.util.MybatisConfigUtils;
 import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;

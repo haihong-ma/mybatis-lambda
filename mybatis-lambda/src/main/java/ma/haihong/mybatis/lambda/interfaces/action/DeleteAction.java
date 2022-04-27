@@ -1,4 +1,4 @@
-package ma.haihong.mybatis.lambda.core.action;
+package ma.haihong.mybatis.lambda.interfaces.action;
 
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 

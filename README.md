@@ -24,10 +24,10 @@ public class SampleDO {
     private Integer age;
 }
 ```
-5. 定义Mapper接口（继承LambdaMapper接口）
+5. 定义Mapper接口（继承BaseMapper接口）
 ```java
 @Mapper
-public interface SampleMapper extends LambdaMapper<SampleDO> {
+public interface SampleMapper extends BaseMapper<SampleDO> {
 }
 ```
 6. 使用Mapper方法操作数据库

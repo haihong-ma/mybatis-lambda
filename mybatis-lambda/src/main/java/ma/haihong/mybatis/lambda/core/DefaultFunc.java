@@ -1,12 +1,13 @@
-package ma.haihong.mybatis.lambda.core.impl;
+package ma.haihong.mybatis.lambda.core;
 
-import ma.haihong.mybatis.lambda.core.action.SelectAction;
-import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndQueryAction;
-import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndSelectAction;
-import ma.haihong.mybatis.lambda.core.fuc.OrderByFunc;
-import ma.haihong.mybatis.lambda.core.fuc.SelectFunc;
-import ma.haihong.mybatis.lambda.core.fuc.WhereFunc;
-import ma.haihong.mybatis.lambda.mapper.LambdaMapper;
+import ma.haihong.mybatis.lambda.exception.MybatisLambdaException;
+import ma.haihong.mybatis.lambda.interfaces.action.SelectAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndQueryAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndSelectAction;
+import ma.haihong.mybatis.lambda.interfaces.fuc.OrderByFunc;
+import ma.haihong.mybatis.lambda.interfaces.fuc.SelectFunc;
+import ma.haihong.mybatis.lambda.interfaces.fuc.WhereFunc;
+import ma.haihong.mybatis.lambda.mapper.Mapper;
 import ma.haihong.mybatis.lambda.parsing.LambdaUtils;
 import ma.haihong.mybatis.lambda.parsing.func.SFunction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
@@ -40,10 +41,14 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     protected static final String WHERE_PREDICATE_NULL_TIP = "where predicate can't be null";
     protected static final String SELECT_FUNCTION_NULL_TIP = "select column can't be null";
 
-    public DefaultFunc(LambdaMapper<T> mapper) {
-        this.mapper = mapper;
+    @SuppressWarnings("unchecked")
+    public DefaultFunc(Mapper<T> mapper) {
+        if (!(mapper instanceof LambdaMapper)) {
+            throw new MybatisLambdaException("invalid mapper define,please extends BaseMapper");
+        }
         this.whereSegment = EMPTY;
         this.paramMap = new HashMap<>();
+        this.mapper = (LambdaMapper<T>) mapper;
         this.orderBySegment = new StringBuilder();
     }
 

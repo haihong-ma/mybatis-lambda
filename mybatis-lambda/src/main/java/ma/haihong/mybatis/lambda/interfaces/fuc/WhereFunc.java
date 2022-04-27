@@ -1,6 +1,6 @@
-package ma.haihong.mybatis.lambda.core.fuc;
+package ma.haihong.mybatis.lambda.interfaces.fuc;
 
-import ma.haihong.mybatis.lambda.core.combination.SelectAndOrderByFuncAndQueryAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndQueryAction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 
 /**

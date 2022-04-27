@@ -1,21 +1,19 @@
 package ma.haihong.mybatis.lambda.mapper;
 
-import ma.haihong.mybatis.lambda.core.Lambda;
-import ma.haihong.mybatis.lambda.core.impl.DefaultLambda;
+import ma.haihong.mybatis.lambda.core.DefaultLambda;
+import ma.haihong.mybatis.lambda.interfaces.Lambda;
 import org.apache.ibatis.annotations.Param;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static ma.haihong.mybatis.lambda.constant.ParamConstants.COLLECTION;
-import static ma.haihong.mybatis.lambda.constant.ParamConstants.LAMBDA;
 
 /**
  * @author haihong.ma
  */
-public interface LambdaMapper<T> {
+public interface BaseMapper<T> extends Mapper<T>{
 
     T findById(Serializable id);
 
@@ -30,21 +28,6 @@ public interface LambdaMapper<T> {
     int deleteById(Serializable id);
 
     int deleteByIds(@Param(COLLECTION) Collection<? extends Serializable> ids);
-
-    /**
-     * 以下使用Lambda表达式参数的方法不可直接调用
-     * 必须通过{@link LambdaMapper#lambda()}方法调用
-     */
-
-    T findOne(@Param(LAMBDA) Lambda<T> lambda);
-
-    List<T> findList(@Param(LAMBDA) Lambda<T> lambda);
-
-    Map<String, ?> findOneMap(@Param(LAMBDA) Lambda<T> lambda);
-
-    int update(@Param(LAMBDA) Lambda<T> lambda);
-
-    int delete(@Param(LAMBDA) Lambda<T> lambda);
 
     default Lambda<T> lambda() {
         return new DefaultLambda<>(this);
