@@ -114,6 +114,19 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
         return mapper.update(this);
     }
 
+    @Override
+    public <K, V> Map<K, V> toMap(SFunction<T, K> keyColumn, SFunction<T, V> valueColumn) {
+        assertSelectFunctionNotNull(keyColumn);
+        assertSelectFunctionNotNull(valueColumn);
+
+        setSelectSegment(convertToColumnName(keyColumn) + COMMA + convertToColumnName(valueColumn));
+        List<T> result = mapper.findList(this);
+        if (Objects.nonNull(result)) {
+            return result.stream().collect(Collectors.toMap(keyColumn, valueColumn));
+        }
+        return null;
+    }
+
     public Object getEntity() {
         return entity;
     }

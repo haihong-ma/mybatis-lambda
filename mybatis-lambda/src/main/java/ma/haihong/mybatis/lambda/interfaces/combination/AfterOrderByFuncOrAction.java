@@ -7,5 +7,5 @@ import ma.haihong.mybatis.lambda.interfaces.fuc.SelectFunc;
 /**
  * @author haihong.ma
  */
-public interface SelectAndOrderByFuncAndSelectAction<T> extends OrderByFunc<T>, SelectFunc<T>, SelectAction<T> {
+public interface AfterOrderByFuncOrAction<T> extends OrderByFunc<T>, SelectFunc<T>, SelectAction<T> {
 }

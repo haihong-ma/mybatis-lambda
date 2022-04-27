@@ -1,6 +1,6 @@
 package ma.haihong.mybatis.lambda.interfaces.fuc;
 
-import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndQueryAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.AfterWhereFuncOrAction;
 import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
 
 /**
@@ -8,5 +8,5 @@ import ma.haihong.mybatis.lambda.parsing.func.SPredicate;
  */
 public interface WhereFunc<T> {
 
-    SelectAndOrderByFuncAndQueryAction<T> where(SPredicate<T> where);
+    AfterWhereFuncOrAction<T> where(SPredicate<T> where);
 }

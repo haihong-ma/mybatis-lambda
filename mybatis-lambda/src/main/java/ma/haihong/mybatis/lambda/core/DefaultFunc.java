@@ -1,9 +1,10 @@
 package ma.haihong.mybatis.lambda.core;
 
 import ma.haihong.mybatis.lambda.exception.MybatisLambdaException;
+import ma.haihong.mybatis.lambda.interfaces.action.MapAction;
 import ma.haihong.mybatis.lambda.interfaces.action.SelectAction;
-import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndQueryAction;
-import ma.haihong.mybatis.lambda.interfaces.combination.SelectAndOrderByFuncAndSelectAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.AfterWhereFuncOrAction;
+import ma.haihong.mybatis.lambda.interfaces.combination.AfterOrderByFuncOrAction;
 import ma.haihong.mybatis.lambda.interfaces.fuc.OrderByFunc;
 import ma.haihong.mybatis.lambda.interfaces.fuc.SelectFunc;
 import ma.haihong.mybatis.lambda.interfaces.fuc.WhereFunc;
@@ -26,7 +27,7 @@ import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
  * @author haihong.ma
  */
 public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, OrderByFunc<T>,
-        SelectAction<T>, SelectAndOrderByFuncAndQueryAction<T>, SelectAndOrderByFuncAndSelectAction<T> {
+        SelectAction<T>, MapAction<T>, AfterWhereFuncOrAction<T>, AfterOrderByFuncOrAction<T> {
 
     protected final LambdaMapper<T> mapper;
 
@@ -62,7 +63,7 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     }
 
     @Override
-    public SelectAndOrderByFuncAndQueryAction<T> where(SPredicate<T> where) {
+    public AfterWhereFuncOrAction<T> where(SPredicate<T> where) {
         assertWherePredicateNotNull(where);
         ParsedResult result = LambdaUtils.parse(where);
         paramMap = result.getParamMap();
@@ -71,14 +72,14 @@ public abstract class DefaultFunc<T> implements SelectFunc<T>, WhereFunc<T>, Ord
     }
 
     @Override
-    public SelectAndOrderByFuncAndSelectAction<T> orderByAsc(SFunction<T, ?> column) {
+    public AfterOrderByFuncOrAction<T> orderByAsc(SFunction<T, ?> column) {
         assertSelectFunctionNotNull(column);
         orderBySegment.append(convertToColumnName(column)).append(SPACE).append(ASC).append(COMMA);
         return this;
     }
 
     @Override
-    public SelectAndOrderByFuncAndSelectAction<T> orderByDesc(SFunction<T, ?> column) {
+    public AfterOrderByFuncOrAction<T> orderByDesc(SFunction<T, ?> column) {
         assertSelectFunctionNotNull(column);
         orderBySegment.append(convertToColumnName(column)).append(SPACE).append(DESC).append(COMMA);
         return this;
