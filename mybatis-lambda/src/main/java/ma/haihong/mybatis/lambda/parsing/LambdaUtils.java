@@ -17,10 +17,12 @@ import org.objectweb.asm.ClassReader;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static ma.haihong.mybatis.lambda.constant.CommonConstants.*;
@@ -33,9 +35,9 @@ import static ma.haihong.mybatis.lambda.constant.ParamConstants.PARAM;
 public class LambdaUtils {
 
     private static final String SERIALIZABLE_WRITE_REPLACE_METHOD = "writeReplace";
-    private static final Map<String, ClassReader> CLASS_READER_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, PropertyInfo> FUNC_PARSED_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, ParsedCache> PREDICATE_PARSED_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, WeakReference<ClassReader>> CLASS_READER_CACHE = new ConcurrentHashMap<>();
 
     public static <T, R> PropertyInfo parse(SFunction<T, R> func) {
         return FUNC_PARSED_CACHE.computeIfAbsent(func.getClass().getName(), className -> {
@@ -79,15 +81,20 @@ public class LambdaUtils {
 
     private static ClassReader initClassReader(SerializedLambda lambda, ClassLoader classLoader) {
         String classFilePath = lambda.getImplClass() + ".class";
-        return CLASS_READER_CACHE.computeIfAbsent(classFilePath, path -> {
-            InputStream classInputStream = classLoader.getResourceAsStream(classFilePath);
-            Assert.notNull(classInputStream, "can't read class file");
-            try {
-                return new ClassReader(classInputStream);
-            } catch (Exception e) {
-                throw new MybatisLambdaException("read class file [" + classFilePath + "] error", e);
-            }
-        });
+        return Optional.ofNullable(CLASS_READER_CACHE.get(classFilePath))
+                .map(WeakReference::get)
+                .orElseGet(() -> {
+                    InputStream classInputStream = classLoader.getResourceAsStream(classFilePath);
+                    Assert.notNull(classInputStream, "can't read class file");
+                    ClassReader classReader;
+                    try {
+                        classReader = new ClassReader(classInputStream);
+                    } catch (Exception e) {
+                        throw new MybatisLambdaException("read class file [" + classFilePath + "] error", e);
+                    }
+                    CLASS_READER_CACHE.put(classFilePath, new WeakReference<>(classReader));
+                    return classReader;
+                });
     }
 
     private static void AddCapturedArg(SPredicate<?> predicate, Map<String, Object> paramMap, LambdaWrapper lambdaWrapper) {
