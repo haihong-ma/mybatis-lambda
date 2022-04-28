@@ -37,18 +37,18 @@ public class TableFieldInfo {
         return propertyType;
     }
 
-    public String getSqlSet(final String prefix) {
-        if (isPrimaryKey()) {
-            //主键默认不做update
-            return EMPTY;
-        }
+    public String getSetSqlForEntity(final String prefix) {
         String prefixPropertyName = prefix + propertyName;
         String setSqlSegment = columnName + EQUAL + HASH_LEFT_BRACE + prefixPropertyName + RIGHT_BRACE + COMMA;
         if (propertyType.isPrimitive()) {
             return setSqlSegment;
         }
-        String nullableSqlSegment = propertyType.equals(String.class)
-                ? SqlScriptUtils.stringNullableSqlSegment(prefixPropertyName) : SqlScriptUtils.objectNullableSqlSegment(prefixPropertyName);
-        return SqlScriptUtils.convertIf(setSqlSegment, nullableSqlSegment, false);
+        return SqlScriptUtils.convertIf(setSqlSegment, SqlScriptUtils.objectNullableSqlSegment(prefixPropertyName), false);
+    }
+
+    public String getSqlSetForUpdateMap(String mapName) {
+        String completeName = mapName + DOT + propertyName;
+        String setSqlSegment = columnName + EQUAL + HASH_LEFT_BRACE + completeName + RIGHT_BRACE + COMMA;
+        return SqlScriptUtils.convertIf(setSqlSegment, SqlScriptUtils.mapContainsKeySqlSegment(mapName, propertyName), false);
     }
 }

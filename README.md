@@ -41,7 +41,7 @@ class DemoApplicationTests {
     @Test
     void contextLoads() {
         long id = 1;
-        String name = "name";
+        String name = "name1";
         List<Long> ids = Arrays.asList(1L, 2L, 3L);
         List<String> names = Arrays.asList("name1", "name2");
         SampleDO sampleParam = new SampleDO() {{
@@ -81,6 +81,8 @@ class DemoApplicationTests {
         long distinctAgeCount = sampleMapper.lambda().where(w -> w.getName().contains("ma")).count(SampleDO::getAge, true);
 
         //更新
+        sampleParam2.setName("test2");
+        sampleMapper.updateById(sampleParam2);
         sampleMapper.lambda().update(sampleParam, w -> w.getId().equals(1L));
         sampleMapper.lambda().update(u -> u.set(SampleDO::getId, 1L).set(SampleDO::getAge, 10), w -> w.getName().equals(name));
 

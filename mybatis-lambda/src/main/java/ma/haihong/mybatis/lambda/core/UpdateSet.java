@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author haihong.ma
  */
 public class UpdateSet<T> {
-    private final Map<SFunction<T, ?>, Object> updateMap = new ConcurrentHashMap<>();
+    private final Map<SFunction<T, ?>, Object> updateMap = new HashMap<>();
 
     public UpdateSet<T> set(SFunction<T, ?> column, Object value) {
         updateMap.put(column, value);
@@ -25,7 +25,7 @@ public class UpdateSet<T> {
         return this;
     }
 
-    Map<String, Object> getParamMap() {
+    Map<String, Object> getUpdateMap() {
         Map<String, Object> paramMap = new HashMap<>();
         updateMap.forEach((key, value) -> paramMap.put(LambdaUtils.parse(key).getPropertyName(), value));
         return paramMap;

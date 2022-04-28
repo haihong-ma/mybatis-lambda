@@ -19,7 +19,7 @@ public class UpdateById extends AbstractMethod {
 
     @Override
     protected String initSqlScript() {
-        String setSqlSegment = tableInfo.getSetSqlSegment(null);
+        String setSqlSegment = tableInfo.getSetSqlSegment(null, true);
         return String.format(sqlTemplate.getSqlScript(), tableInfo.getTableName(),
                 setSqlSegment, tableInfo.getKeyColumn(), tableInfo.getKeyProperty());
     }

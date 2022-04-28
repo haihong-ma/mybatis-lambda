@@ -21,7 +21,8 @@ import static ma.haihong.mybatis.lambda.constant.SqlConstants.*;
  */
 public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
 
-    private Object entity;
+    private T entity;
+    private Map<String, Object> updateMap;
 
     private static final String UPDATE_ENTITY_NULL_TIP = "entity can't be null";
     private static final String UPDATE_SET_NULL_TIP = "updateSet can't be null";
@@ -109,7 +110,7 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
 
         UpdateSet<T> set = new UpdateSet<>();
         updateSet.accept(set);
-        this.entity = set.getParamMap();
+        this.updateMap = set.getUpdateMap();
         super.where(where);
         return mapper.update(this);
     }
@@ -129,6 +130,10 @@ public class DefaultLambda<T> extends DefaultFunc<T> implements Lambda<T> {
 
     public Object getEntity() {
         return entity;
+    }
+
+    public Map<String, Object> getUpdateMap() {
+        return updateMap;
     }
 
     @SuppressWarnings("unchecked")

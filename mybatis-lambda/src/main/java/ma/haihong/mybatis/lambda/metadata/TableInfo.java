@@ -67,9 +67,9 @@ public class TableInfo {
         return fieldInfos.stream().map(m -> SqlScriptUtils.safeParam(convertPrefix + m.getPropertyName())).collect(Collectors.joining(COMMA));
     }
 
-    public String getSetSqlSegment(final String prefix) {
+    public String getSetSqlSegment(final String prefix, final boolean isEntity) {
         String convertPrefix = StringUtils.emptyIfNull(prefix);
-        return SqlScriptUtils.convertTrim(fieldInfos.stream().map(m -> m.getSqlSet(convertPrefix)).filter(Objects::nonNull).collect(joining(NEWLINE)),
+        return SqlScriptUtils.convertTrim(fieldInfos.stream().map(m -> isEntity ? m.getSetSqlForEntity(convertPrefix) : m.getSqlSetForUpdateMap(convertPrefix)).filter(Objects::nonNull).collect(joining(NEWLINE)),
                 null, null, null, COMMA);
     }
 }

@@ -14,6 +14,7 @@ public class SqlScriptUtils {
 
     private final static String OBJECT_NULLABLE_TEMPLATE = "%s != null";
     private final static String STRING_NULLABLE_TEMPLATE = OBJECT_NULLABLE_TEMPLATE + " and %s != ''";
+    private final static String MAP_CONTAINS_KEY_TEMPLATE = "%s.containsKey('%s')";
 
 
     private SqlScriptUtils() {
@@ -182,6 +183,10 @@ public class SqlScriptUtils {
 
     public static String stringNullableSqlSegment(String propertyName) {
         return String.format(STRING_NULLABLE_TEMPLATE, propertyName, propertyName);
+    }
+
+    public static String mapContainsKeySqlSegment(String mapName, String propertyName) {
+        return String.format(MAP_CONTAINS_KEY_TEMPLATE, mapName, propertyName);
     }
 
     public static String lambdaSqlSegment(String sqlSegmentName) {
