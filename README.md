@@ -84,7 +84,7 @@ class DemoApplicationTests {
         sampleParam2.setName("test2");
         sampleMapper.updateById(sampleParam2);
         sampleMapper.lambda().update(sampleParam, w -> w.getId().equals(1L));
-        sampleMapper.lambda().update(u -> u.set(SampleDO::getId, 1L).set(SampleDO::getAge, 10), w -> w.getName().equals(name));
+        sampleMapper.lambda().update(u -> u.set(SampleDO::getName, null).set(SampleDO::getAge, 10), w -> w.getName().equals(name));
 
         //删除
         sampleMapper.deleteById(id);
